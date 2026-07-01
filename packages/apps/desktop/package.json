@@ -1,0 +1,11 @@
+{
+  "name": "@almanac/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@almanac/core": "workspace:*",
+    "@almanac/food": "workspace:*",
+    "@almanac/meals": "workspace:*"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/kernels/food" },
+    { "path": "packages/modules/meals" },
+    { "path": "packages/apps/desktop" },
+    { "path": "packages/apps/web" }
+  ]
+}
