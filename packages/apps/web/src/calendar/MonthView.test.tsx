@@ -18,6 +18,8 @@ describe('calendar shell', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Almanac');
     expect(screen.getAllByRole('columnheader')).toHaveLength(7);
     expect(screen.getAllByRole('gridcell').length).toBeGreaterThanOrEqual(28);
+    // valid grid structure: a header row + 4–6 week rows
+    expect(screen.getAllByRole('row').length).toBeGreaterThanOrEqual(5);
   });
 
   it('switches language EN → CS (Today button relabels, L7 pipeline)', async () => {

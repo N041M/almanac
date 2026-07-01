@@ -35,15 +35,18 @@ interface CalendarState {
   goToday: () => void;
   select: (date: ISODate) => void;
   toggleStar: (date: ISODate) => Promise<void>;
+  /** Load the visible month's slices. Driven by the view's effect on
+   *  year/month/locale — actions only change state, they don't load. */
   loadMonth: () => Promise<void>;
 }
 
 export const useCalendar = create<CalendarState>((set, get) => {
   const start = today();
+  // Guards against out-of-order async loads clobbering the current month.
+  let loadToken = 0;
 
   function setMonth(anchor: ISODate): void {
     set({ year: Number(anchor.slice(0, 4)), month: Number(anchor.slice(5, 7)) });
-    void get().loadMonth();
   }
 
   return {
@@ -56,14 +59,13 @@ export const useCalendar = create<CalendarState>((set, get) => {
     setLocale: (locale) => {
       void i18n.changeLanguage(locale.language);
       set({ locale });
-      void get().loadMonth();
     },
     prevMonth: () => setMonth(addMonths(anchorISO(get().year, get().month), -1)),
     nextMonth: () => setMonth(addMonths(anchorISO(get().year, get().month), 1)),
     goToday: () => {
       const t = today();
-      set({ selected: t });
       setMonth(t);
+      set({ selected: t });
     },
     select: (date) => set({ selected: date }),
 
@@ -74,6 +76,7 @@ export const useCalendar = create<CalendarState>((set, get) => {
     },
 
     loadMonth: async () => {
+      const seq = ++loadToken;
       const { year, month, locale } = get();
       const grid = buildMonthGrid(year, month, locale.weekStartsOn);
       const first = grid[0]?.[0]?.date;
@@ -82,6 +85,8 @@ export const useCalendar = create<CalendarState>((set, get) => {
       if (first === undefined || last === undefined) return;
 
       const days = await dayStore.getRange(first, last, [dayMarkCodec]);
+      if (seq !== loadToken) return; // a newer load started; drop this stale result
+
       const starred: Record<ISODate, boolean> = {};
       for (const day of days) {
         if (getSlice<DayMark>(day, 'demo')?.starred === true) starred[day.date] = true;

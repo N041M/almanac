@@ -63,46 +63,53 @@ export function MonthView() {
         </button>
       </div>
 
-      <div role="grid" className="grid grid-cols-7 gap-1 text-sm">
-        {weekdayLabels(tag, locale.weekStartsOn).map((label) => (
-          <div
-            key={label}
-            role="columnheader"
-            className="py-1 text-center text-xs font-medium text-neutral-500"
-          >
-            {label}
+      <div role="grid" aria-label={t('title')} className="grid grid-cols-7 gap-1 text-sm">
+        {/* `contents` keeps rows in the ARIA tree without breaking the 7-col grid. */}
+        <div role="row" className="contents">
+          {weekdayLabels(tag, locale.weekStartsOn).map((label) => (
+            <div
+              key={label}
+              role="columnheader"
+              className="py-1 text-center text-xs font-medium text-neutral-500"
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {grid.map((week, wi) => (
+          <div key={week[0]?.date ?? String(wi)} role="row" className="contents">
+            {week.map((cell) => {
+              const isSelected = cell.date === selected;
+              const isStarred = starred[cell.date] ?? false;
+              return (
+                <button
+                  key={cell.date}
+                  role="gridcell"
+                  aria-label={cell.date}
+                  aria-current={cell.isToday ? 'date' : undefined}
+                  aria-selected={isSelected}
+                  onClick={() => select(cell.date)}
+                  className={[
+                    'relative aspect-square rounded p-1 text-left align-top',
+                    cell.inMonth ? 'text-neutral-900' : 'text-neutral-300',
+                    cell.isToday ? 'ring-1 ring-blue-500' : '',
+                    isSelected ? 'bg-blue-100' : 'hover:bg-neutral-100',
+                  ].join(' ')}
+                >
+                  <span className="text-xs">{Number(cell.date.slice(8, 10))}</span>
+                  {isStarred && (
+                    <span
+                      aria-label={t('starredLegend')}
+                      className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-amber-500"
+                      style={{ opacity: intensityForPriority(1) }}
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
         ))}
-
-        {grid.flat().map((cell) => {
-          const isSelected = cell.date === selected;
-          const isStarred = starred[cell.date] ?? false;
-          return (
-            <button
-              key={cell.date}
-              role="gridcell"
-              aria-label={cell.date}
-              aria-current={cell.isToday ? 'date' : undefined}
-              aria-selected={isSelected}
-              onClick={() => select(cell.date)}
-              className={[
-                'relative aspect-square rounded p-1 text-left align-top',
-                cell.inMonth ? 'text-neutral-900' : 'text-neutral-300',
-                cell.isToday ? 'ring-1 ring-blue-500' : '',
-                isSelected ? 'bg-blue-100' : 'hover:bg-neutral-100',
-              ].join(' ')}
-            >
-              <span className="text-xs">{Number(cell.date.slice(8, 10))}</span>
-              {isStarred && (
-                <span
-                  aria-label={t('starredLegend')}
-                  className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-amber-500"
-                  style={{ opacity: intensityForPriority(1) }}
-                />
-              )}
-            </button>
-          );
-        })}
       </div>
     </section>
   );
