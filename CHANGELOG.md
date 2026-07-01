@@ -19,7 +19,9 @@ Entries are grouped by **build phase** (design doc §13) until v1.
 - Vitest test runner; GitHub Actions CI (`typecheck` + `lint` + `test`).
 - i18n stubs: EN + CS locale files (core + meals namespaces).
 - `Clock` / `Rng` ports stubbed (L4 determinism seam).
-- Docs: README (the laws + dependency diagram), agent context, docs/DECISIONS.md.
+- Docs: lightweight README; agent context; `docs/` with ARCHITECTURE (the laws +
+  Mermaid UML: component, class, engine-flow), BUILD_JOURNAL (per-phase
+  narrative), DECISIONS, and an index.
 
 ### Not yet built
 Phase 1 (core: day record, calendar model, recurrence, units, registry, i18n
