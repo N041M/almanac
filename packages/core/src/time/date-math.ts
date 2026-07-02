@@ -1,5 +1,5 @@
 import type { ISODate } from './iso-date.js';
-import { toEpochDay, fromEpochDay } from './iso-date.js';
+import { toEpochDay, fromEpochDay, MS_PER_DAY } from './iso-date.js';
 
 /** 0 = Sunday … 6 = Saturday (matches `Date.getUTCDay`). */
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -36,14 +36,14 @@ export function daysInMonth(year: number, month: number): number {
 /** Add `n` months, clamping the day to the target month's length. */
 export function addMonths(date: ISODate, n: number): ISODate {
   const epoch = toEpochDay(date);
-  const d = new Date(epoch * 86_400_000);
+  const d = new Date(epoch * MS_PER_DAY);
   const year = d.getUTCFullYear();
   const month0 = d.getUTCMonth() + n;
   const targetYear = year + Math.floor(month0 / 12);
   const targetMonth = ((month0 % 12) + 12) % 12;
   const day = Math.min(d.getUTCDate(), daysInMonth(targetYear, targetMonth + 1));
   return fromEpochDay(
-    Math.floor(Date.UTC(targetYear, targetMonth, day) / 86_400_000),
+    Math.floor(Date.UTC(targetYear, targetMonth, day) / MS_PER_DAY),
   );
 }
 

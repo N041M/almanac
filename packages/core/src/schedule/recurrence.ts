@@ -1,6 +1,6 @@
 import type { ISODate } from '../time/iso-date.js';
 import type { Weekday } from '../time/date-math.js';
-import { toEpochDay, fromEpochDay } from '../time/iso-date.js';
+import { toEpochDay, fromEpochDay, isValidISODate } from '../time/iso-date.js';
 import { diffDays, weekdayOf, startOfWeek } from '../time/date-math.js';
 
 export type Frequency = 'daily' | 'weekly' | 'monthly';
@@ -54,7 +54,8 @@ function matches(rule: Recurrence, date: ISODate): boolean {
 
 /**
  * Occurrences within `[rangeStart, rangeEnd]` (inclusive), in ascending order.
- * Bounded by `count`/`until`. Never throws; an empty range yields `[]`.
+ * Bounded by `count`/`until`. Never throws (L5): an empty/backwards range or a
+ * malformed date in the rule or range yields `[]`.
  */
 export function occurrencesInRange(
   rule: Recurrence,
@@ -62,14 +63,27 @@ export function occurrencesInRange(
   rangeEnd: ISODate,
 ): ISODate[] {
   const out: ISODate[] = [];
+  if (
+    !isValidISODate(rule.start) ||
+    !isValidISODate(rangeStart) ||
+    !isValidISODate(rangeEnd) ||
+    (rule.until !== undefined && !isValidISODate(rule.until))
+  ) {
+    return out;
+  }
   if (diffDays(rangeStart, rangeEnd) < 0) return out;
 
   const hardEnd =
     rule.until !== undefined && diffDays(rule.until, rangeEnd) > 0 ? rule.until : rangeEnd;
 
   let seen = 0;
-  // Iterate from `start` so `count` is honoured even before the range opens.
-  let cursor = toEpochDay(rule.start);
+  // With a `count` cap, every occurrence since `start` must be counted, so the
+  // walk begins there. Without one, skip straight to the window — a rule that
+  // started years ago must not cost years of dead iterations per query.
+  let cursor =
+    rule.count !== undefined
+      ? toEpochDay(rule.start)
+      : Math.max(toEpochDay(rule.start), toEpochDay(rangeStart));
   const stop = toEpochDay(hardEnd);
   while (cursor <= stop) {
     const date = fromEpochDay(cursor);

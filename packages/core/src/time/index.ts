@@ -1,5 +1,12 @@
 export type { ISODate } from './iso-date.js';
-export { isValidISODate, toEpochDay, fromEpochDay, todayISO } from './iso-date.js';
+export {
+  MS_PER_DAY,
+  isValidISODate,
+  toEpochDay,
+  fromEpochDay,
+  dateFromISO,
+  todayISO,
+} from './iso-date.js';
 export type { Weekday } from './date-math.js';
 export {
   addDays,

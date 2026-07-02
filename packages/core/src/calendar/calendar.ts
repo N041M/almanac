@@ -27,8 +27,9 @@ export function buildMonthGrid(
   weekStartsOn: Weekday,
   today?: ISODate,
 ): CalendarCell[][] {
+  const yearStr = year.toString().padStart(4, '0');
   const monthStr = month.toString().padStart(2, '0');
-  const firstOfMonth: ISODate = `${year}-${monthStr}-01`;
+  const firstOfMonth: ISODate = `${yearStr}-${monthStr}-01`;
   const gridStart = startOfWeek(firstOfMonth, weekStartsOn);
   const lead = diffDays(gridStart, firstOfMonth);
   const weeks = Math.ceil((lead + daysInMonth(year, month)) / 7);
@@ -40,7 +41,7 @@ export function buildMonthGrid(
       const date = addDays(gridStart, w * 7 + d);
       row.push({
         date,
-        inMonth: date.slice(0, 7) === `${year}-${monthStr}`,
+        inMonth: date.slice(0, 7) === `${yearStr}-${monthStr}`,
         isToday: today !== undefined && date === today,
       });
     }
