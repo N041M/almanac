@@ -1,9 +1,9 @@
 # Almanac
 
-A **local-first personal calendar**. The calendar is the core; every feature is
-an independent **module** that plugs into a shared hub and never depends on
-another module. Runs offline, keeps sensitive data on-device, multilingual from
-day one. Meal-planning is the first module.
+A **personal calendar** with an offline-capable local store and (eventually)
+cross-device sync. The calendar is the core; every feature is an independent
+**module** that plugs into a shared hub and never depends on another module.
+Multilingual from day one. Meal-planning is the first module.
 
 ## Quickstart
 

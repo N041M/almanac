@@ -10,6 +10,7 @@ export function createLocalStoragePort(): StoragePort {
   const store = globalThis.localStorage;
   return {
     read: (key) => Promise.resolve(store.getItem(key)),
+    readMany: (keys) => Promise.resolve(keys.map((key) => store.getItem(key))),
     write: (key, value) => {
       store.setItem(key, value);
       return Promise.resolve();

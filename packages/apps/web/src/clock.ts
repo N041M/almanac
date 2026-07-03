@@ -1,8 +1,11 @@
-import type { ISODate } from '@almanac/core';
+import type { Clock, ISODate } from '@almanac/core';
 
 // The app layer is the sanctioned edge for real time (the core only ever sees
-// an injected Clock, L4). The user's "today" is their *local* calendar date,
-// so it comes from local Date components, not UTC.
+// an injected Clock, L4).
+export const systemClock: Clock = { now: () => Date.now() };
+
+// The user's "today" is their *local* calendar date, so it comes from local
+// Date components, not UTC.
 export function today(): ISODate {
   const d = new Date();
   const y = d.getFullYear().toString().padStart(4, '0');

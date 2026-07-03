@@ -5,6 +5,35 @@ to depart on), with rationale. Newest first. Keep entries short.
 
 ---
 
+## D4 — L6 relaxed; sync architecture pinned (server-durable, locally-cached)
+
+**Decided:** 2026-07-03 · **Status:** accepted · **Design ref:** §2 L6, §11 · Refines D1
+
+L6's strict local-first dogma is relaxed. The store stays on-device (instant UI,
+works offline — the cheap substrate), but there is **no special
+health-data-never-leaves posture**, and the **server copy is the durable one**
+once sync (D1) exists.
+
+Sync architecture, pinned now so Phases 3–6 can't drift away from it:
+- **Per-slice revision sync.** The unit of sync = the per-day, per-module slice
+  (already the storage unit). Server keeps an authoritative revision log;
+  clients pull deltas since their last revision and push changed slices
+  (debounced) after writes, on app-open, and on network-regain.
+- **Conflicts: last-writer-wins per slice, silently.** Single-user data; a true
+  conflict needs the same module's slice for the same day edited on two offline
+  devices — rare, and newest-wins matches user expectation. No merge UI.
+- **Per-client posture:** desktop/mobile hold a full local store; the **web
+  port** treats local storage as a cache and reads through the server when cold
+  (browser storage is evictable).
+- Slice envelopes carry a modified-at timestamp from day one so the first sync
+  can LWW against real times instead of treating all history as conflicting.
+
+**Why:** the user judged strict local-first unnecessary and flagged the real
+risk — cross-platform sync feeling clunky. Clunky sync comes from coarse blobs
+and bolted-on sync; slice granularity + pinned revisions prevent exactly that.
+Cloud-first was considered and rejected: it adds a backend and kills offline
+without removing the reconciliation problem.
+
 ## D3 — Desktop shell is Tauri (supersedes an initial Electron pick)
 
 **Decided:** 2026-07-01 · **Status:** accepted · **Design ref:** §3

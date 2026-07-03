@@ -9,11 +9,12 @@ import {
 } from '@almanac/core';
 import { createLocalStoragePort } from '../storage/local-storage-port';
 import { dayMarkCodec, type DayMark } from './day-mark';
-import { today } from '../clock';
+import { systemClock, today } from '../clock';
 import i18n from '../i18n/config';
 
-// One day-store for the app, over the web storage adapter.
-const dayStore = createDayStore(createLocalStoragePort());
+// One day-store for the app, over the web storage adapter. The clock stamps
+// writes with modified-at so slice data is sync-ready from day one (D4).
+const dayStore = createDayStore(createLocalStoragePort(), systemClock);
 
 function anchorISO(year: number, month: number): ISODate {
   return `${year}-${String(month).padStart(2, '0')}-01`;

@@ -22,7 +22,9 @@ Non-negotiable; enforced where possible (design doc §2).
   an injected `Clock`. No `Math.random()`/`Date.now()` in logic.
 - **L5 — Graceful degradation, everywhere.** Every component has a defined, quiet,
   lower-capability state for missing/partial/erroring input. Failures isolate.
-- **L6 — Local-first.** Data on-device; health data never leaves by default.
+- **L6 — Locally-cached, server-durable (relaxed, D4).** On-device store for
+  instant UI + offline; opt-in sync makes the server copy durable (per-slice
+  LWW by revision).
 - **L7 — i18n from day one.** No hardcoded strings; missing key → English.
 - **L8 — Strict TypeScript.** `strict` + `noUncheckedIndexedAccess`; no `any`.
 

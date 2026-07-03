@@ -9,6 +9,20 @@ Entries are grouped by **build phase** (design doc §13) until v1.
 
 ## [Unreleased]
 
+### D4 — L6 relaxed; sync architecture pinned
+- **Decision** (docs/DECISIONS.md D4): local store stays (offline + instant UI)
+  but the server copy is durable once sync exists; per-slice **LWW revision
+  sync**; web port reads through the server when cold; health-data dogma
+  dropped. L6 reworded in README/CLAUDE/ARCHITECTURE.
+- **`SyncPort` reshaped** to the pinned model: batch `push` (server assigns
+  revisions) + `pull(sinceRevision)` returning records and the next cursor.
+- **`StoragePort.readMany`** (optional, with per-key fallback): `getRange`
+  batches a month into one storage call instead of days×slices sequential
+  awaits — both adapters (memory, localStorage) implement it.
+- **Slice envelopes carry modified-at** (`m`, epoch ms) via an injected `Clock`
+  (L4), so data written from now on can LWW against real times at first sync;
+  timestampless envelopes remain readable.
+
 ### Sweep — dead code, bugs, redundancies (post-review fixes)
 - **core:** one `parseISO` validation path (was double-validating); `MS_PER_DAY`
   exported and used everywhere (no inline `86_400_000`); new **`dateFromISO`**
