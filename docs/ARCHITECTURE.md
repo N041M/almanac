@@ -85,8 +85,10 @@ classDiagram
   note for Rng "✅ built. L4: all randomness flows through here"
 ```
 
-Planned (design doc §5): `StoragePort`, `WeatherPort`, `NutritionPort`, and a
-reserved `SyncPort` (opt-in sync, decision D1).
+Also built: **`StoragePort`** (read/write/remove/keys + optional batched
+`readMany`), **`SyncPort`** (batch push / pull-since-revision per D4), and the
+**`WeatherPort`** / **`NutritionPort`** contracts (adapters land with their
+modules). Planned (ROADMAP P6): `NotificationPort`.
 
 ## Domain model (contract — 🔵 not yet implemented)
 
@@ -182,6 +184,20 @@ that's the anti-clustering property the statistical tests guard (design §12).
 
 ## What's actually built today
 
-Only the scaffold: `Clock`/`Rng` ports, package skeletons, version constants,
-i18n stubs, and the enforcement rig (boundary lint, strict TS, CI). Everything
-🔵 above is the destination, tracked in [BUILD_JOURNAL.md](BUILD_JOURNAL.md).
+- **Core (Phase 1)** ✅ — time (`ISODate`, date math, fixed clock), seeded RNG,
+  units (convert/normalize/combine), recurrence v1 (daily/weekly/monthly,
+  interval/count/until, never-throws), sparse Day record + `DayStore` with
+  isolated versioned slice codecs (+ batched range reads), calendar model
+  (locale week-start grids, priority intensity scale), signal registry, i18n
+  service, and the six port contracts.
+- **Web renderer (Phase 2)** ✅ — design tokens (system light+dark),
+  month/week/day views + switcher, keyboard-first grid
+  (`aria-activedescendant` roving selection), EN/CS via react-i18next,
+  `localStorage` `StoragePort`, Zustand store, demo "star a day" slice
+  exercising the full Day pipeline. 51 tests.
+- **Tauri shell** 🔨 — compiles with icons; native (SQLite) `StoragePort`
+  pending.
+- The **food kernel and meals engine** classes above remain 🔵 (Phases 3–4).
+
+Phase-by-phase narrative: [BUILD_JOURNAL.md](BUILD_JOURNAL.md) · sequence:
+[ROADMAP.md](ROADMAP.md).

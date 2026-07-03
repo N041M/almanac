@@ -22,8 +22,11 @@ ESLint `boundaries` · i18next (EN + CS) · Open Food Facts · Open-Meteo.
 
 ## Docs
 
-- **[docs/](docs/)** — architecture + UML, decisions, and the build journal ([docs/README.md](docs/README.md) indexes them).
+- **[docs/ROADMAP.md](docs/ROADMAP.md)** — the authoritative 12-phase build
+  sequence, incl. the L5 degradation matrix for every planned feature.
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — the laws, the dependency star, and UML diagrams.
+- **[docs/DECISIONS.md](docs/DECISIONS.md)** — decision log (D0–D5).
+- **[docs/BUILD_JOURNAL.md](docs/BUILD_JOURNAL.md)** — per-phase narrative.
 - **[CHANGELOG.md](CHANGELOG.md)** — what shipped, per phase.
 - **[ALMANAC_DESIGN_DOC.md](ALMANAC_DESIGN_DOC.md)** — the full handoff spec.
 
@@ -33,11 +36,12 @@ ESLint `boundaries` · i18next (EN + CS) · Open Food Facts · Open-Meteo.
 
 ## Status
 
-**Phase 2 (desktop calendar shell) in progress** — shared Vite/React/Tailwind
-renderer (`@almanac/web`) showing a month calendar from the core with EN/CS i18n
-and `localStorage` persistence; Tauri v2 shell scaffolded (native build needs
-Rust). Phase 1 (core) and Phase 0 (scaffold) complete. 43 tests. — workspaces, strict TS, boundary lint, Vitest,
-CI, i18n stubs; apps are stubs. Build phases: design doc §13.
+**Phase 2 (calendar shell) nearly complete** — month / week / day views with a
+view switcher, design tokens with system light+dark, keyboard-first grid
+(roving `aria-activedescendant` selection), EN/CS i18n, `localStorage`
+persistence through the versioned day-store; Tauri v2 shell compiles (icons
+in; native `StoragePort` still to come). Phases 0–1 (scaffold, core) complete.
+51 tests. Build sequence: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## The one-line why
 
