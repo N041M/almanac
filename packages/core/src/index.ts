@@ -10,5 +10,6 @@ export * from './day/index.js';
 export * from './calendar/index.js';
 export * from './registry/index.js';
 export * from './i18n/index.js';
+export * from './module/index.js';
 
 export const CORE_VERSION = '0.0.0';
