@@ -8,14 +8,15 @@ import {
   type Locale,
   EN_US,
 } from '@almanac/core';
-import { createLocalStoragePort } from '../storage/local-storage-port';
+import { createStoragePort } from '../storage/create-storage-port';
 import { dayMarkCodec, type DayMark } from './day-mark';
 import { systemClock, today } from '../clock';
 import i18n from '../i18n/config';
 
-// One day-store for the app, over the web storage adapter. The clock stamps
-// writes with modified-at so slice data is sync-ready from day one (D4).
-const dayStore = createDayStore(createLocalStoragePort(), systemClock);
+// One day-store for the app, over the environment's storage adapter (SQLite in
+// the Tauri shell, localStorage in the web port). The clock stamps writes with
+// modified-at so slice data is sync-ready from day one (D4).
+const dayStore = createDayStore(createStoragePort(), systemClock);
 
 export type CalendarView = 'month' | 'week' | 'day';
 

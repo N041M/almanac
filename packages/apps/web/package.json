@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@almanac/core": "workspace:*",
+    "@tauri-apps/plugin-sql": "^2.2.0",
     "i18next": "^24.2.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

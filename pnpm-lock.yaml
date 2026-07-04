@@ -44,6 +44,9 @@ importers:
       '@almanac/core':
         specifier: workspace:*
         version: link:../../core
+      '@tauri-apps/plugin-sql':
+        specifier: ^2.2.0
+        version: 2.4.0
       i18next:
         specifier: ^24.2.1
         version: 24.2.3(typescript@5.9.3)
@@ -878,6 +881,9 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
+  '@tauri-apps/api@2.11.1':
+    resolution: {integrity: sha512-M2FPuYND2m+wh5hfW9ZpSdxMPdEJovPBWwoHJmwUpysTYNHaOkVFN419m/K0LIgjb/7KU2vBgsUepJWugQCvAA==}
+
   '@tauri-apps/cli-darwin-arm64@2.11.4':
     resolution: {integrity: sha512-1ryOF3ZhpZ/nemHV5zVwBQBz9jDGKmKPvWPADOhc83ig0P4bMc2iER4NbC6r9sjeIZ6RVQ4g3RZIYvezhcl4TQ==}
     engines: {node: '>= 10'}
@@ -953,6 +959,9 @@ packages:
     resolution: {integrity: sha512-R8xGtMpwyetawSqm9kYOuMmEqkhUbvcUy8n0aNXIxollKBLESUu5f4Fx+64hgASYm1H+jSWq6jCW6zqTnH6hqQ==}
     engines: {node: '>= 10'}
     hasBin: true
+
+  '@tauri-apps/plugin-sql@2.4.0':
+    resolution: {integrity: sha512-SIICc5JlnK6OrBZzOw7MmhXHPlmASpt5zLWIu10WW4kLr5cDYOXHdV2MoCgYQkgZLQfyBYgF3SQa5XCisUiQkw==}
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -2948,6 +2957,8 @@ snapshots:
       tailwindcss: 4.3.2
       vite: 6.4.3(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)
 
+  '@tauri-apps/api@2.11.1': {}
+
   '@tauri-apps/cli-darwin-arm64@2.11.4':
     optional: true
 
@@ -2994,6 +3005,10 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.11.4
       '@tauri-apps/cli-win32-ia32-msvc': 2.11.4
       '@tauri-apps/cli-win32-x64-msvc': 2.11.4
+
+  '@tauri-apps/plugin-sql@2.4.0':
+    dependencies:
+      '@tauri-apps/api': 2.11.1
 
   '@testing-library/dom@10.4.1':
     dependencies:
