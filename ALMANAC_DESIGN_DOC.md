@@ -329,10 +329,11 @@ section's discipline: acceptance criteria per phase, `pnpm check` green, and
 
 0. Scaffold ✅ · 1. Core ✅ · 2. Calendar shell (tokens, month/week/day views,
 EN+CS) ✅ · 3. Food kernel · 4. Meals module (§6 exactly — **the load-bearing
-gate**, incl. the module-manifest seam) · 5. Macros + shopping · 6. Calendar
-core v2 (recurrence v2, timed/multi-day/timezone events, notifications,
-hour-grid/agenda views, drag & drop, undo) · 7. Tasks/events/habits (+ NL quick
-entry) · 8. Interop (ICS, subscriptions, search, year view, printing) ·
+gate**, incl. the module-manifest seam) · 5. Calendar core v2 (recurrence v2,
+timed/multi-day/timezone events, notifications, hour-grid/agenda views, drag &
+drop, undo, settings, vault export) · 6. Tasks/events/habits (+ NL quick
+entry) · 7. Macros + shopping ·
+8. Interop (ICS, subscriptions, search, year view, printing) ·
 9. Life modules (check-in, cycle, body, workouts, weather, insights,
 birthdays) · 10. Sync (§11) · 11. Mobile + widgets/tray · 12. Multi-user (§15).
 

@@ -18,25 +18,27 @@ Status: ✅ done · 🔨 in progress · — planned.
 | 2 | Calendar shell | tokens/dark UI, month/week/day views, keyboard grid, EN+CS, localStorage + SQLite `StoragePort` (Tauri) | ✅ |
 | 3 | Food kernel | Ingredient/Recipe/NutritionFacts; OFF adapter + caching + degradation | — |
 | 4 | Meals module | §6 engine exactly, TDD + statistical suite; **module-manifest seam defined first** | — |
-| 5 | Macros + Shopping | both modules + UI; two-trigger aggregation (§8.1) | — |
-| 6 | Calendar core v2 | recurrence v2 · timed/multi-day/timezone events · `NotificationPort` · hour-grid + agenda views · drag & drop · undo | — |
-| 7 | Tasks module | tasks/events/habits on v2 primitives; NL quick entry; command palette; notifications wired | — |
+| 5 | Calendar core v2 | recurrence v2 · timed/multi-day/timezone events · `NotificationPort` · hour-grid + agenda views · drag & drop · undo · settings surface · vault export/import | — |
+| 6 | Tasks module | tasks/events/habits on v2 primitives; NL quick entry; command palette; notifications wired | — |
+| 7 | Macros + Shopping | both modules + UI; two-trigger aggregation (§8.1) | — |
 | 8 | Interop & findability | ICS import/export · calendar subscriptions · search · year view · printing | — |
 | 9 | Life modules | check-in · cycle · body · workouts · weather · insights · birthdays | — |
 | 10 | Sync | D1/D4: accounts, per-slice LWW revision sync, server-durable | — |
 | 11 | Mobile + surfaces | Expo client · widgets · tray mini-calendar · polish | — |
 | 12 | Multi-user | shared calendars · attendees/invites/RSVP · free-busy + find-a-time · booking pages · conferencing links | — |
 
-Rationale for the order: meals-first stays (D0). Phase 6 must precede Phase 7 —
-the tasks module stores recurring/timed events, so their **shape must be final
-before the first event is persisted** (migrations are the tax for deciding
-late).
+Rationale for the order: meals-first stays (D0) — the engine is self-contained
+pure logic. Calendar v2 + tasks (5–6) come before macros + shopping (7) so the
+app is **livable-in daily** as early as possible; real usage feeds everything
+downstream. Phase 5 must precede Phase 6 — the tasks module stores
+recurring/timed events, so their **shape must be final before the first event
+is persisted** (migrations are the tax for deciding late).
 
 ---
 
-## Phase 6 — Calendar core v2 (the two early contracts + notifications + views)
+## Phase 5 — Calendar core v2 (the two early contracts + notifications + views)
 
-### 6.1 Recurrence v2 (core `schedule/`)
+### 5.1 Recurrence v2 (core `schedule/`)
 Extends `Recurrence` **additively** (v1 rules keep working):
 - `freq: 'yearly'` (birthdays, anniversaries).
 - `byWeekdayPos` — nth weekday of month ("2nd Tuesday"), incl. `-1` for last.
@@ -47,7 +49,7 @@ Extends `Recurrence` **additively** (v1 rules keep working):
   an `applyOverrides` helper. The series stays one rule; instances stay cheap.
 - Same L5 posture: malformed input → `[]`, never throws.
 
-### 6.2 Timed, multi-day, timezone-aware events (core `time/` + conventions)
+### 5.2 Timed, multi-day, timezone-aware events (core `time/` + conventions)
 - **All-day events** stay pure `ISODate` (timezone-free — the current model).
 - **Timed events** store `{ startUtc: number, endUtc: number, zone: string }` —
   the instant is absolute (UTC ms), `zone` is the *display intent* (IANA id).
@@ -59,14 +61,14 @@ Extends `Recurrence` **additively** (v1 rules keep working):
   banners from contiguous runs.
 - Degrade (L5): missing/unknown `zone` → render in the viewer's local zone.
 
-### 6.3 `NotificationPort` (core `ports/`)
+### 5.3 `NotificationPort` (core `ports/`)
 `schedule(id, atUtc, payload)` / `cancel(id)` / `requestPermission()`.
 Adapters: Tauri notification plugin (desktop), Expo notifications (mobile),
 Web Notifications (web port, best-effort). Reminder *rules* (offset before
 event, task due, habit nudge) live in the owning modules; the core only fires.
 Degrade: permission denied/unsupported → quiet in-app badges; never nags (L5).
 
-### 6.4 Views & interactions (apps/web renderer)
+### 5.4 Views & interactions (apps/web renderer)
 - **Hour-grid day/week view**: time-axis columns (all-day lane on top), the
   view switcher grows Month · Week · **Timeline** · Day; drag to create,
   drag/resize to move timed events (pointer events; keyboard equivalents).
@@ -77,11 +79,23 @@ Degrade: permission denied/unsupported → quiet in-app badges; never nags (L5).
   writes); `⌘Z` + a toast with "Undo". Trash/soft-delete is per-module state
   where destructive (tasks), not a core mechanism.
 
-## Phase 7 — Tasks module additions (beyond the design doc §8)
+### 5.5 Settings & vault (apps/web renderer + core)
+- **Settings surface**: week-start day, locale, time format, default reminder
+  offsets — the L7 region formatting made visible; stored as its own slice.
+- **Vault export/import**: full-store JSON backup (dump/restore every
+  `StoragePort` key) — the pre-sync durability story; import is per-slice and
+  skips corrupt entries (L5).
+
+## Phase 6 — Tasks module additions (beyond the design doc §8)
 - **NL quick entry** on top of the sigil parser: "lunch with Anna tomorrow
   13:00", EN + CS, pure logic + tests (dates/times/durations; locale-aware).
-- Reminders per task/event (uses 6.3), default offsets in settings.
-- Recurring events use 6.1 overrides for "edit this occurrence only".
+- Reminders per task/event (uses 5.3), default offsets in settings.
+- Recurring events use 5.1 overrides for "edit this occurrence only".
+
+## Phase 7 — Macros + Shopping (design doc §8.1, unchanged in content)
+Moved after tasks (was Phase 5) so the calendar is livable-in first; both
+modules ride the food kernel + meals plans: two-trigger shopping aggregation,
+unit-normalized lists, macro totals from planned meals + manual logging.
 
 ## Phase 8 — Interop & findability
 - **ICS import/export** (module `calendar-interop`): RFC 5545 parse/serialize
@@ -101,7 +115,7 @@ Degrade: permission denied/unsupported → quiet in-app badges; never nags (L5).
 
 ## Phase 9 — Life modules (design doc §8, unchanged)
 check-in · cycle · body · workouts · weather (signal provider) · insights ·
-**birthdays** (new small module: manual entries + yearly recurrence from 6.1;
+**birthdays** (new small module: manual entries + yearly recurrence from 5.1;
 platform-contacts import later behind a capability port).
 
 ## Phase 11 — Mobile + surfaces
@@ -155,7 +169,7 @@ Per design §9/§12: every feature below ships **with tests proving its degraded
 state** — defined, working, and quiet (no nags, no blank screens, no cascading
 failures). A feature is not done until its row here is demonstrably true.
 
-### Phase 6 — calendar core v2
+### Phase 5 — calendar core v2
 
 | Feature | Failure / absence | Degraded state |
 |---|---|---|
@@ -171,8 +185,10 @@ failures). A feature is not done until its row here is demonstrably true.
 | Hour-grid view | overlapping events | side-by-side packing; nothing is ever hidden behind something else |
 | Drag & drop | slice write fails on drop | optimistic move stands for the session (same contract as every write); pointer unavailable → keyboard move (cut/paste style) always exists |
 | Undo | inverse write fails / stack lost on reload | that undo entry is dropped quietly; undo is best-effort session state, never a data authority |
+| Settings | settings slice corrupt/absent | locale + formatting defaults (EN, Intl-derived region); the app never blocks on settings |
+| Vault import | corrupt entries / unknown-version slices in the file | valid slices import, bad ones are skipped and counted; never aborts the file |
 
-### Phases 7–9 — tasks, interop, life modules
+### Phases 6–9 — tasks, macros + shopping, interop, life modules
 
 | Feature | Failure / absence | Degraded state |
 |---|---|---|
@@ -209,9 +225,16 @@ without it; any storage slice corrupt → that slice defaults in isolation; ever
 external call sits behind a port; every empty state is actionable.
 
 ## Decide-at-phase-entry markers
-- **P6 entry:** confirm 6.1/6.2 contracts (they're proposals until then).
+- **P5 entry:** confirm 5.1/5.2 contracts (they're proposals until then).
+- **P6 entry (before the first event is persisted):** decide sync **delete
+  semantics** — per-slice LWW needs deletion modeled (tombstones or a
+  deleted-at field that participates in LWW), or a stale device resurrects
+  deleted entries at P10. Cheap to decide now, a migration tax later.
 - **P8 entry:** pick the ICS strategy (own minimal parser vs vetted dep in the
   module) after checking dep size/quality then.
+- **P10 entry:** spec the sync envelope + service before client wiring —
+  revision semantics, clock-skew stance on modified-at, tombstone GC, key
+  enumeration; the P6 delete decision becomes acceptance criteria here.
 - **P12 entry:** spec the server service (ACL model, invite routing,
   availability, booking endpoint) before client work — including the failure
   rows above as server acceptance criteria.
