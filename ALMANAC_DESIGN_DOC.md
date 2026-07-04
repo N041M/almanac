@@ -1,13 +1,13 @@
-# Design doc: **Almanac** — a local-first personal calendar
+# Design doc: **Almanac** — a personal calendar (offline-capable, server-durable)
 
-*Handoff spec for the implementing developer. `Almanac` is a working codename — swap freely. Read the whole document before writing any code.*
+*Living spec. `Almanac` is a working codename — swap freely. Read the whole document before writing any code. Originally a handoff spec; now maintained alongside the build — resolved decisions live in [docs/DECISIONS.md](docs/DECISIONS.md) (D0–D5) and the authoritative phase sequence in [docs/ROADMAP.md](docs/ROADMAP.md). Sections below have been updated to match; §2 (laws), §6 (meal engine), and §7 (food kernel) remain the original exact contracts.*
 
 ---
 
 ## 0. How to work on this
 
-- Read this end to end, then **produce a short build plan, confirm the stack (§3), and confirm the one open decision (§11, the sync model) before scaffolding.** Don't generate files until that's acknowledged.
-- Build in the phases in **§13**. After each phase run typecheck + lint + tests and **stop for review**.
+- Read this end to end. The stack (§3) and the sync model (§11) are **confirmed** (decisions D1–D4).
+- Build in the phases in **[docs/ROADMAP.md](docs/ROADMAP.md)** (supersedes §13's ordering). After each phase run typecheck + lint + tests and **stop for review**.
 - **§2 (the laws) and §6 (the meal engine) are contracts, not suggestions.** The laws are invariants to preserve and, wherever possible, *enforce mechanically* (lint, package boundaries, tests). The engine is the one fully-specified algorithm and must be implemented exactly.
 - Ask before deviating from §2 or the architecture in §4. If you see a genuinely better approach, say so with reasoning and wait.
 - Small, conventional-commit steps. Each commit reviewable.
@@ -16,7 +16,7 @@
 
 ## 1. What we're building (one paragraph)
 
-A **local-first personal calendar and life-management app**. The calendar is the shell; the central abstraction is that **a day is one composite record** that every feature reads from and writes to. Features (meal planning, macros, shopping, cycle tracking, to-dos, habits, workouts, weather, insights, …) are independent **modules that plug into a shared core** — they never depend on each other. It runs **fully offline**, keeps sensitive data **on-device by default**, ships **multilingual from day one** (English default), and has **two clients — a native mobile app and a web/desktop app — sharing one framework-agnostic core**.
+A **personal calendar and life-management app**. The calendar is the core; the central abstraction is that **a day is one composite record** that every feature reads from and writes to. Features (meal planning, macros, shopping, cycle tracking, to-dos, habits, workouts, weather, insights, …) are independent **modules that plug into a shared core** — they never depend on each other. Every client keeps an **offline-capable local store**; opt-in sync makes the **server copy durable** across devices (D4), and multi-user features (shared calendars, invites) arrive on top of it (D5). It ships **multilingual from day one** (English default) with **a Tauri desktop app + a web port sharing one framework-agnostic core** (D2/D3); a native mobile client reuses the same core in a later phase.
 
 ---
 
@@ -36,7 +36,7 @@ This is enforced, not aspirational: each module is its own package, sibling modu
 
 **L5 — Graceful degradation, everywhere.** A **core concept for the whole system**, not a privacy add-on. **Every component must have a defined, working, lower-capability state for any input, dependency, signal, module, or capability that is missing, partial, declined, or erroring** — and it degrades **quietly** (never nags, never blanks the screen). Failures are **isolated, never cascading**: one bad field, adapter, module, or storage slice degrades only itself. The meal engine's relaxation ladder (§6.5) is the canonical example, and the privacy/permission fallbacks are simply one instance. Everything optional is **additive** — nothing in the core breaks when it's absent. The full set of categories and their acceptance criteria are in §9.
 
-**L6 — Local-first.** All data lives on-device. **Health/sensitive data never leaves the device by default.** No third-party analytics, no tracking. The only outbound network calls in the whole app are: nutrition lookup, weather, and (if adopted, §11) opt-in sync. Each is behind a port and each degrades per L5.
+**L6 — Locally-cached, server-durable** *(relaxed from strict local-first by D4)*. Every client keeps an on-device store behind `StoragePort` — instant UI, fully offline-capable. Opt-in sync (§11) makes the **server copy the durable one**: per-slice last-writer-wins by revision; the web port may read through the server when its cache is cold. No third-party analytics, no tracking. Outbound network calls (nutrition lookup, weather, sync, and the P8/P12 interop features) each sit behind a port and each degrades per L5.
 
 **L7 — Internationalization from day one.** **No hardcoded user-facing strings** — everything is a key resolved at render time. The i18n service lives in the core; **each module ships its own translation namespace** alongside its code; locale bundles load lazily; a missing key falls back to **English** (the default and the one guaranteed-complete locale). "Locale" means **text + formatting + region** (Intl-based dates/numbers, week-start day, metric/imperial, decimal separator), not just a language code. Details in §10.
 
@@ -49,14 +49,15 @@ This is enforced, not aspirational: each module is its own package, sibling modu
 - **Monorepo:** pnpm workspaces. Package boundaries are what make L1/L3 enforceable.
 - **Language:** TypeScript (strict).
 - **Core + kernels + module logic:** plain TS, zero UI-framework deps. If schema validation is wanted (zod), isolate it in a schema/adapter sub-module — keep the engine itself dependency-free.
-- **Web/desktop client:** React + **Vite** + **Tailwind** + **Zustand** + **Vitest** + React Testing Library.
-- **Mobile client:** **React Native (Expo)**, sharing the same core + kernels + module logic. Views are per-client (see §4); optional React-Native-Web component sharing is allowed but **never** at the cost of L1.
+- **Desktop client:** **Tauri v2** (D3 — chosen over Electron for its system-webview memory footprint) wrapping the shared renderer.
+- **Web client (the shared renderer):** React + **Vite** + **Tailwind v4** + **Zustand** + **Vitest** + React Testing Library. The same build is the web port and the Tauri frontend (D2).
+- **Mobile client (later phase, ROADMAP P11):** **React Native (Expo)**, sharing the same core + kernels + module logic. Views are per-client (see §4); optional React-Native-Web component sharing is allowed but **never** at the cost of L1.
 - **i18n:** `i18next` + `react-i18next` (works across both clients; supports per-namespace lazy loading, interpolation, pluralization, and English fallback).
 - **Boundary enforcement:** ESLint with `eslint-plugin-boundaries` (or `dependency-cruiser`) implementing the matrix in §4.
 - **External data:** Open Food Facts (nutrition) and Open-Meteo (weather), each behind a port/adapter.
 - **Barcode:** native scanner module in the mobile app (no iOS web-scanning gap); desktop uses name search (§8 shopping/macros).
 
-Not Next.js: this is a local-first SPA + native app, not an SSR site.
+Not Next.js: this is an offline-capable SPA + native shells, not an SSR site.
 
 ---
 
@@ -65,8 +66,9 @@ Not Next.js: this is a local-first SPA + native app, not an SSR site.
 Dependency rule (arrows point inward; the lint rule enforces it):
 
 ```
-apps  ─────►  modules  ─────►  kernels  ─────►  core
-(web, mobile)  (spokes)        (food, …)        (day, calendar, ports, registry, i18n)
+apps  ──────────►  modules  ─────►  kernels  ─────►  core
+(desktop, web,      (spokes)        (food, …)        (day, calendar, ports, registry, i18n)
+ mobile later)
 ```
 
 ```
@@ -97,8 +99,9 @@ packages/
     weather/                 #   ambient weather; registers a signal provider; Open-Meteo adapter
     insights/               #   cross-day analytics (reads shared day data; imports no module)
   apps/
-    web/                     # React + Vite. Implements views for each module; registers renderers.
-    mobile/                  # React Native (Expo). Same, plus native barcode scanner.
+    desktop/                 # Tauri v2 shell (primary client; system webview) over the web build.
+    web/                     # React + Vite — the shared renderer + the web port.
+    mobile/                  # (later, ROADMAP P11) React Native (Expo) + native barcode scanner.
 README.md
 ```
 
@@ -273,8 +276,8 @@ Per **L5**, degradation is pervasive, not a privacy feature. Every category belo
 | Weather | Location, network | Manual city, or weather absent; meal/workout/task suggestions fall back to their non-weather behaviour (signal simply missing) |
 | Nutrition lookup | Network | Manual entry (ingredient + quantity), nutrition fields blank; never blocks logging |
 | Barcode scan | Camera | Name search / manual entry |
-| Cycle & health data | — | Local-only by default; prediction on-device; disable prediction → still logs + history |
-| Sync (if adopted, §11) | Network, account | App fully functional single-device; sync only ever *adds* cross-device convenience |
+| Cycle & health data | — | Prediction on-device; disable prediction → still logs + history; syncs like any other slice once sync is on (D4) |
+| Sync (§11, adopted) | Network, account | App fully functional single-device; sync only ever *adds* cross-device convenience |
 
 - **Localization.** A missing translation key falls back to English (L7) — the same law applied to text.
 - **UI failure isolation.** A day-cell contribution or detail view that throws degrades to "that cell/section shows nothing" behind a boundary — it never breaks the calendar render.
@@ -297,13 +300,12 @@ Throughline: everything optional is **additive**; nothing in the core breaks whe
 
 ## 11. Persistence & (optional) sync
 
-- Local store behind `StoragePort`; **schema-versioned**; each module owns its **schema slice**; migrations keyed by version. **Slices are isolated — a corrupted or unknown-version slice falls back to that module's defaults without affecting other modules or the app (L5).** Web: IndexedDB (or localStorage to start). Mobile: the platform store. Adapters are swappable per L3/L6.
-- **Local-first default:** everything works single-device, fully offline.
-- **Open decision (confirm before building):** the sync model. Three options:
-  1. **No server** — single-device only; desktop nutrition entry = **name search** (OFF search endpoint); phone→desktop barcode handoff not built.
-  2. **Ephemeral relay** — a small *stateless* WebSocket broker for QR-paired phone→desktop barcode handoff; stores nothing.
-  3. **Full opt-in sync** — accounts + cross-device sync; phone→desktop handoff comes for free; sync remains additive (L5/L6).
-  **Default assumption for v1: option 1.** Everything below the sync layer is identical across the three, so this can be deferred — but confirm it, because it's the only place the local-first stance has a real fork.
+- Local store behind `StoragePort`; **schema-versioned**; each module owns its **schema slice**; migrations keyed by version. **Slices are isolated — a corrupted or unknown-version slice falls back to that module's defaults without affecting other modules or the app (L5).** Web: localStorage to start (IndexedDB later). Desktop: SQLite/filesystem adapter. Mobile: the platform store. Adapters are swappable per L3/L6.
+- **Decided (D1 + D4): full opt-in sync, server-durable.** Accounts + cross-device sync; the on-device store stays (offline + instant UI) and the server copy is the durable one. Mechanics (pinned early so slice data stays sync-ready):
+  - **Per-slice revision sync** — the unit of sync = the per-day, per-module slice; the server keeps an authoritative monotonic revision log; clients push changed slices (debounced, on open, on network-regain) and pull deltas since their last revision.
+  - **Conflicts: last-writer-wins per slice, silently** (single-user data; slice envelopes carry a modified-at timestamp from day one).
+  - **Per-client posture:** desktop/mobile hold a full local store; the web port treats local storage as a cache and reads through the server when cold.
+  - Sync remains **additive** (L5): everything works single-device, fully offline; multi-user (§15/ROADMAP P12) builds on these same streams.
 
 ---
 
@@ -317,31 +319,46 @@ Throughline: everything optional is **additive**; nothing in the core breaks whe
 
 ---
 
-## 13. Build phases (with acceptance criteria — stop after each)
+## 13. Build phases
 
-- **Phase 0 — Scaffold.** pnpm workspaces; packages for core/kernels/modules/apps; TS strict; ESLint boundary rule; i18n scaffold (EN + CZ stubs); Vitest; CI (`typecheck`, `lint`, `test`). *Done when:* empty test suite passes **and** a deliberate sibling import fails the build.
-- **Phase 1 — Core.** Day record + day-store contract; calendar model; recurrence; units; registry; i18n service; ports (`Rng`/`Clock`/`Storage`/`Weather`/`Nutrition`); date helpers. With tests. *Done when:* core compiles with zero UI deps and is unit-tested.
-- **Phase 2 — Food kernel.** Ingredient/Recipe/NutritionFacts/units; OFF `NutritionPort` adapter with caching + the §9 degradation. *Done when:* barcode lookup works online and the manual fallback works offline, both tested.
-- **Phase 3 — Meals module (TDD).** Implement §6 exactly; write the §12 engine + statistical suite alongside. *Done when:* the full suite is green and coverage met. **The load-bearing gate.**
-- **Phase 4 — Web shell + meals UI + i18n.** Calendar views (month/week/day); meals views (week grid, lock, re-roll, variety, breakdown); wire i18n; EN + CZ live. *Done when:* meal planning is fully usable on desktop in both languages.
-- **Phase 5 — Macros + Shopping.** Both modules + their web UI; shopping's two triggers (§8.1); macros logging from planned meals + manual + (web) name search. *Done when:* a planned week produces a correct, unit-normalized shopping list and macro totals.
-- **Phase 6 — Mobile app.** React Native (Expo) shell reusing core/kernels/modules; native barcode scanner; the implemented modules' views. *Done when:* the v1 feature set runs natively and shares the core verbatim.
-- **Phase 7 — Remaining modules.** tasks/events → habits → check-in → cycle → body → workouts → weather (provider + Open-Meteo) → insights. Each must slot in **without** touching another module. *Done when:* each lands behind the boundary lint with its own tests, degradation, and i18n namespace.
-- **Phase 8 — Polish, optional sync (§11), docs.**
+**Superseded by [docs/ROADMAP.md](docs/ROADMAP.md)** (D0 reordered this
+section's food-centric spine to calendar-first, and the roadmap adds the
+calendar-completeness features and multi-user, D5). The roadmap keeps this
+section's discipline: acceptance criteria per phase, `pnpm check` green, and
+**stop after each phase for review**. Summary of the current sequence:
 
-**v1 = phases 0–6** (the food-centric spine on both clients). Everything else is additive by construction.
+0. Scaffold ✅ · 1. Core ✅ · 2. Calendar shell (tokens, month/week/day views,
+EN+CS) ✅ · 3. Food kernel · 4. Meals module (§6 exactly — **the load-bearing
+gate**, incl. the module-manifest seam) · 5. Macros + shopping · 6. Calendar
+core v2 (recurrence v2, timed/multi-day/timezone events, notifications,
+hour-grid/agenda views, drag & drop, undo) · 7. Tasks/events/habits (+ NL quick
+entry) · 8. Interop (ICS, subscriptions, search, year view, printing) ·
+9. Life modules (check-in, cycle, body, workouts, weather, insights,
+birthdays) · 10. Sync (§11) · 11. Mobile + widgets/tray · 12. Multi-user (§15).
 
 ---
 
 ## 14. Deliverables
 
-- Working `pnpm dev` (web) and an Expo run (mobile) sharing one core.
+- Working `pnpm --filter @almanac/web dev` (web port), `pnpm --filter @almanac/desktop dev` (Tauri), and — from ROADMAP P11 — an Expo run (mobile), all sharing one core.
 - Green `pnpm test` / `typecheck` / `lint`, **including the boundary and i18n tests**.
 - A README stating **the laws (§2)**, an ASCII dependency diagram, run instructions, and a short rationale for star-modularity + composition-over-inheritance.
 - Conventional-commit history.
 
 ---
 
-## 15. Out of scope now (keep the seams clean)
+## 15. Scope edges (keep the seams clean)
 
-Accounts/social, nutrition micronutrients, AI meal/workout suggestions, and anything beyond the optional sync in §11 are **future** work — don't build them, don't architect them out. Reasonable later extensions (pantry, meal categories with slot rules like "fish on Fridays", import/export, adaptive TDEE) must each arrive as a **new module or a new rule composed into the core**, never as a rewrite and never as a sibling dependency.
+**Multi-user is now in scope** (D5, reversing this section's original
+exclusion): shared calendars, attendees/invitations/RSVP (incl. the
+**auto-accept whitelist** for trusted senders), free-busy + find-a-time,
+booking pages, and conferencing links — as ROADMAP **Phase 12**, built
+strictly on top of sync's accounts + per-slice streams, additive per L5
+(signed-out/offline = the full single-user app).
+
+Still out of scope: nutrition micronutrients and AI meal/workout suggestions —
+future work; don't build them, don't architect them out. Reasonable later
+extensions (pantry, meal categories with slot rules like "fish on Fridays",
+adaptive TDEE) must each arrive as a **new module or a new rule composed into
+the core**, never as a rewrite and never as a sibling dependency. (Import/
+export graduated into the plan: ROADMAP P8.)
