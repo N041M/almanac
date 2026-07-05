@@ -30,10 +30,11 @@ export function MealWeekList() {
   return (
     <ol className="divide-y divide-line">
       {plan.map((entry, i) => {
+        // A meal whose recipe was deleted degrades to a label, not a raw id.
         const name =
           entry.recipeId === null
             ? null
-            : (recipes[entry.recipeId]?.name ?? entry.recipeId);
+            : (recipes[entry.recipeId]?.name ?? t('removedMeal'));
         return (
           <li
             key={entry.date}

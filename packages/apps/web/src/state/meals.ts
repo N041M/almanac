@@ -18,6 +18,7 @@ import {
   createMealsStore,
   generateWeek,
   rerollDay,
+  type MealsDaySlice,
   type PlanItem,
   type Settings,
   type WeekPlan,
@@ -67,6 +68,10 @@ interface MealsState {
   nutritionChoices: Readonly<Record<string, NutritionResult[]>>;
   /** Per ingredient: which choice is applied (null = "no match" chosen). */
   nutritionPick: Readonly<Record<string, number | null>>;
+  /** Read-through cache of meals on dates outside the loaded plan week. */
+  dayMeals: Readonly<Record<ISODate, string | null>>;
+  /** The copied meal, ready to paste onto any day (tasks join at Phase 6). */
+  mealClipboard: MealsDaySlice | null;
 
   load: () => Promise<void>;
   addMeal: (name: string, tags: string, preset: WeightPreset) => Promise<void>;
@@ -86,6 +91,12 @@ interface MealsState {
   toggleLock: (index: number) => Promise<void>;
   commit: () => Promise<void>;
   showBreakdown: (index: number | null) => void;
+  /** Ensure `dayMeals[date]` is loaded for a date outside the plan week. */
+  loadDayMeal: (date: ISODate) => Promise<void>;
+  /** Copy the meal planned on `date` (from the week plan or any other day). */
+  copyMeal: (date: ISODate) => void;
+  /** Paste the copied meal onto `date` — any day, any week. */
+  pasteMeal: (date: ISODate) => Promise<void>;
 }
 
 /** This Monday (weekStart is locale-driven later; the engine only needs a date). */
@@ -112,6 +123,8 @@ export const useMeals = create<MealsState>((set, get) => ({
   breakdownIndex: null,
   nutritionChoices: {},
   nutritionPick: {},
+  dayMeals: {},
+  mealClipboard: null,
 
   load: async () => {
     if (get().loaded) return;
@@ -222,10 +235,22 @@ export const useMeals = create<MealsState>((set, get) => ({
       return; // offline/error: quietly no choices, ingredient stays factless (L5)
     }
     if (get().ingredients[ingredientId] === undefined) return; // removed meanwhile
-    set((s) => ({ nutritionChoices: { ...s.nutritionChoices, [ingredientId]: matches } }));
+    // When facts already exist (previous session), point the pick at the
+    // matching choice so the selector reflects what's actually applied.
+    const applied = get().ingredients[ingredientId]?.nutrition?.per100g;
+    const appliedIndex =
+      applied === undefined
+        ? undefined
+        : matches.findIndex((m) => JSON.stringify(m.per100g) === JSON.stringify(applied));
+    set((s) => ({
+      nutritionChoices: { ...s.nutritionChoices, [ingredientId]: matches },
+      ...(appliedIndex !== undefined && appliedIndex >= 0
+        ? { nutritionPick: { ...s.nutritionPick, [ingredientId]: appliedIndex } }
+        : {}),
+    }));
     // Auto-apply the top match only when the ingredient has no facts yet —
     // a user-confirmed pick is never overwritten by a background guess.
-    if (matches.length > 0 && get().ingredients[ingredientId]?.nutrition === undefined) {
+    if (matches.length > 0 && applied === undefined) {
       await get().applyNutrition(ingredientId, 0);
     }
   },
@@ -279,7 +304,8 @@ export const useMeals = create<MealsState>((set, get) => ({
     const { items, settings, plan, recipes } = get();
     if (settings === null) return;
     const next = generateWeek(items, new Map(Object.entries(recipes)), settings, plan, rng);
-    set({ plan: next, breakdownIndex: null });
+    // The plan is the truth for its dates now; drop any stale day cache.
+    set({ plan: next, breakdownIndex: null, dayMeals: {} });
     await quietly(() => mealsStore.writeWeek(next));
   },
 
@@ -289,7 +315,16 @@ export const useMeals = create<MealsState>((set, get) => ({
     const next = rerollDay(items, new Map(Object.entries(recipes)), settings, plan, index, rng);
     if (next === plan) return;
     set({ plan: next });
-    await quietly(() => mealsStore.writeWeek(next));
+    const entry = next[index];
+    if (entry !== undefined) {
+      await quietly(() =>
+        mealsStore.writeDay(entry.date, {
+          recipeId: entry.recipeId,
+          locked: entry.locked,
+          breakdown: entry.breakdown,
+        }),
+      );
+    }
   },
 
   toggleLock: async (index) => {
@@ -297,7 +332,16 @@ export const useMeals = create<MealsState>((set, get) => ({
       i === index ? { ...entry, locked: !entry.locked } : entry,
     );
     set({ plan });
-    await quietly(() => mealsStore.writeWeek(plan));
+    const entry = plan[index];
+    if (entry !== undefined) {
+      await quietly(() =>
+        mealsStore.writeDay(entry.date, {
+          recipeId: entry.recipeId,
+          locked: entry.locked,
+          breakdown: entry.breakdown,
+        }),
+      );
+    }
   },
 
   commit: async () => {
@@ -306,11 +350,47 @@ export const useMeals = create<MealsState>((set, get) => ({
     const committed = commitWeek(items, plan);
     const weekStart = committed.nextWeekStart ?? settings.weekStart;
     const nextSettings = { ...settings, weekStart };
-    set({ items: committed.items, settings: nextSettings, breakdownIndex: null });
+    // The old week's dates leave the plan; the cache must not answer for them.
+    set({ items: committed.items, settings: nextSettings, breakdownIndex: null, dayMeals: {} });
     await quietly(() => mealsStore.saveItems(committed.items));
     await quietly(() => mealsStore.saveSettings(nextSettings));
     set({ plan: await mealsStore.readWeek(weekStart) });
   },
 
   showBreakdown: (index) => set({ breakdownIndex: index }),
+
+  loadDayMeal: async (date) => {
+    const { plan, dayMeals } = get();
+    if (plan.some((entry) => entry.date === date)) return; // the plan covers it
+    if (date in dayMeals) return;
+    // readDay never throws — a missing/corrupt slice reads as empty (L5).
+    const slice = await mealsStore.readDay(date);
+    set((s) => ({ dayMeals: { ...s.dayMeals, [date]: slice.recipeId } }));
+  },
+
+  copyMeal: (date) => {
+    const { plan, dayMeals } = get();
+    // The plan is authoritative for its dates — even when the slot is empty;
+    // the day cache only answers for dates outside the plan week.
+    const entry = plan.find((e) => e.date === date);
+    const recipeId = entry !== undefined ? entry.recipeId : (dayMeals[date] ?? null);
+    // A copy is a fresh placement: no lock, and no breakdown — the pasted
+    // meal wasn't drawn by the engine, so a "why this pick" would lie.
+    set({ mealClipboard: recipeId === null ? null : { recipeId, locked: false, breakdown: null } });
+  },
+
+  pasteMeal: async (date) => {
+    const { mealClipboard: slice, plan } = get();
+    if (slice === null) return; // empty clipboard: a quiet no-op (L5)
+    const target = plan.find((entry) => entry.date === date);
+    if (target?.locked === true) return; // a lock protects its day from paste too
+    set((s) => ({
+      plan:
+        target !== undefined
+          ? s.plan.map((entry) => (entry.date === date ? { ...entry, ...slice } : entry))
+          : s.plan,
+      dayMeals: target !== undefined ? s.dayMeals : { ...s.dayMeals, [date]: slice.recipeId },
+    }));
+    await quietly(() => mealsStore.writeDay(date, slice));
+  },
 }));

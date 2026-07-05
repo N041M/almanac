@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { bcp47, dateFromISO, type ISODate } from '@almanac/core';
 import { useCalendar } from '../state/store';
@@ -20,13 +21,27 @@ export function DayDetail({
   const locale = useCalendar((s) => s.locale);
   const starred = useCalendar((s) => s.starred);
   const toggleStar = useCalendar((s) => s.toggleStar);
-  // The meals contribution for this day, when the loaded plan covers it — an
-  // absent module or uncovered date simply contributes nothing (L5).
-  const plannedMeal = useMeals((s) => {
-    const entry = s.plan.find((e) => e.date === date && e.recipeId !== null);
-    if (entry?.recipeId == null) return undefined;
-    return s.recipes[entry.recipeId]?.name ?? entry.recipeId;
+  // The meals contribution for this day: the loaded plan week, or any other
+  // date via the read-through cache — an absent module or empty day simply
+  // contributes nothing (L5).
+  const load = useMeals((s) => s.load);
+  const loadDayMeal = useMeals((s) => s.loadDayMeal);
+  const copyMeal = useMeals((s) => s.copyMeal);
+  const pasteMeal = useMeals((s) => s.pasteMeal);
+  const hasClipboard = useMeals((s) => s.mealClipboard !== null);
+  // The plan is authoritative for its dates — an empty slot there must not
+  // fall through to the (possibly stale) out-of-week cache. `null` = a meal
+  // whose recipe no longer exists.
+  const plannedMeal = useMeals((s): string | null | undefined => {
+    const entry = s.plan.find((e) => e.date === date);
+    const recipeId = entry !== undefined ? entry.recipeId : (s.dayMeals[date] ?? null);
+    if (recipeId === null) return undefined;
+    return s.recipes[recipeId]?.name ?? null;
   });
+
+  useEffect(() => {
+    void load().then(() => loadDayMeal(date));
+  }, [load, loadDayMeal, date]);
 
   const label = new Intl.DateTimeFormat(bcp47(locale), {
     weekday: 'long',
@@ -43,14 +58,22 @@ export function DayDetail({
       {plannedMeal !== undefined ? (
         <p className="text-sm">
           <span className="text-ink-muted">{t('meals:plannedMeal')}: </span>
-          {plannedMeal}
+          {plannedMeal ?? t('meals:removedMeal')}
         </p>
       ) : (
         <p className="text-sm text-ink-muted">{t('noEntries')}</p>
       )}
-      <Button onClick={() => void toggleStar(date)}>
-        {isStarred ? t('unstar') : t('star')}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => void toggleStar(date)}>
+          {isStarred ? t('unstar') : t('star')}
+        </Button>
+        {plannedMeal !== undefined && (
+          <Button onClick={() => copyMeal(date)}>{t('meals:copyMeal')}</Button>
+        )}
+        {hasClipboard && (
+          <Button onClick={() => void pasteMeal(date)}>{t('meals:pasteMeal')}</Button>
+        )}
+      </div>
     </div>
   );
 }

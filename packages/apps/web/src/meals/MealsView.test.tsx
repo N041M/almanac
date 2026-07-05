@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EN_US } from '@almanac/core';
 import { App } from '../App';
@@ -31,6 +31,8 @@ beforeEach(async () => {
     breakdownIndex: null,
     nutritionChoices: {},
     nutritionPick: {},
+    dayMeals: {},
+    mealClipboard: null,
   });
 });
 
@@ -305,6 +307,74 @@ describe('meals UI', () => {
     await user.click(retry);
     expect(await screen.findByText(/500 kcal/)).toBeInTheDocument();
     expect(screen.getByLabelText('Nutrition match for Beef')).toBeInTheDocument();
+  });
+
+  it('copy/paste moves a meal to another day via the day detail buttons', async () => {
+    const user = userEvent.setup();
+    await openMeals(user);
+    await addMeal(user, 'Goulash');
+    await user.click(screen.getByRole('button', { name: 'Generate week' }));
+
+    // Calendar: select today (inside the plan week) and copy its meal.
+    await user.click(screen.getByRole('button', { name: 'Calendar' }));
+    await user.click(screen.getByRole('gridcell', { current: 'date' }));
+    await user.click(await screen.findByRole('button', { name: 'Copy meal' }));
+
+    // Move selection one day right; paste there.
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    await user.click(screen.getByRole('button', { name: 'Paste meal' }));
+    expect(await screen.findByText('Goulash')).toBeInTheDocument();
+
+    // The paste is persisted as that day's meals slice.
+    const target = useCalendar.getState().selected ?? '';
+    const raw = globalThis.localStorage.getItem(`day:${target}:meals`) ?? '';
+    expect(raw).toContain('"recipeId"');
+    // A pasted copy is a fresh placement: no engine breakdown rides along.
+    expect(JSON.parse(raw)).toMatchObject({ d: { breakdown: null, locked: false } });
+  });
+
+  it('⌘C/⌘V on the grid copy and paste the selected day, quietly no-op when empty', async () => {
+    const user = userEvent.setup();
+    await openMeals(user);
+    await addMeal(user, 'Goulash');
+    await user.click(screen.getByRole('button', { name: 'Generate week' }));
+    await user.click(screen.getByRole('button', { name: 'Calendar' }));
+
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowRight' }); // selects today
+    fireEvent.keyDown(grid, { key: 'c', metaKey: true });
+    expect(useMeals.getState().mealClipboard?.recipeId).not.toBeNull();
+
+    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    fireEvent.keyDown(grid, { key: 'v', metaKey: true });
+    const pasted = useCalendar.getState().selected ?? '';
+    await screen.findByText('Goulash'); // day detail shows it
+    expect(useMeals.getState().plan.some((e) => e.date === pasted) || pasted !== '').toBe(true);
+
+    // Copying an empty day empties the clipboard — paste becomes a no-op (L5).
+    fireEvent.keyDown(grid, { key: 'ArrowDown' }); // a week later: outside the plan
+    fireEvent.keyDown(grid, { key: 'c', metaKey: true });
+    expect(useMeals.getState().mealClipboard).toBeNull();
+  });
+
+  it('a locked day rejects paste, quietly — the lock protects it', async () => {
+    const user = userEvent.setup();
+    await openMeals(user);
+    await addMeal(user, 'Goulash');
+    await addMeal(user, 'Soup');
+    await user.click(screen.getByRole('button', { name: 'Generate week' }));
+
+    const before = useMeals.getState().plan[2];
+    await useMeals.getState().toggleLock(2);
+    useMeals.setState({
+      mealClipboard: { recipeId: 'anything-else', locked: false, breakdown: null },
+    });
+    await useMeals.getState().pasteMeal(before?.date ?? '');
+
+    const after = useMeals.getState().plan[2];
+    expect(after?.recipeId).toBe(before?.recipeId);
+    expect(after?.locked).toBe(true);
   });
 
   it('meals switch language with the app (module namespace rides the manifest, L7)', async () => {

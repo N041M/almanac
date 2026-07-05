@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { intensityForPriority, type ISODate } from '@almanac/core';
+import type { ISODate } from '@almanac/core';
 
 interface DayCellProps {
   date: ISODate;
@@ -61,7 +61,6 @@ export function DayCell({
         <span
           aria-label={t('starredLegend')}
           className="absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-mark"
-          style={{ opacity: intensityForPriority(1) }}
         />
       )}
     </button>

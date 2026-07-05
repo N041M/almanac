@@ -33,7 +33,7 @@ export function MealBreakdown() {
     return <p className="text-sm text-ink-muted">{t('pickBreakdownHint')}</p>;
   }
   const b = entry.breakdown;
-  const name = recipes[entry.recipeId]?.name ?? entry.recipeId;
+  const name = recipes[entry.recipeId]?.name ?? t('removedMeal');
   const percent = (p: number) => `${(p * 100).toFixed(0)} %`;
 
   return (

@@ -11,6 +11,7 @@ import {
   type Weekday,
 } from '@almanac/core';
 import { useCalendar } from '../state/store';
+import { useMeals } from '../state/meals';
 import { Button } from '../ui/Button';
 import { ViewSwitcher } from './ViewSwitcher';
 import { MonthGrid } from './MonthGrid';
@@ -105,8 +106,24 @@ export function CalendarView() {
         : formatters.full.format(dateFromISO(shownDay));
 
   // Roving selection: the grid is one tab stop; arrows move the selected day
-  // (aria-activedescendant), crossing range edges as needed.
+  // (aria-activedescendant), crossing range edges as needed. ⌘C/⌘V copy and
+  // paste the selected day's entry (meals today; tasks join at Phase 6).
+  const copyMeal = useMeals((s) => s.copyMeal);
+  const pasteMeal = useMeals((s) => s.pasteMeal);
   function onGridKeyDown(e: React.KeyboardEvent<HTMLDivElement>): void {
+    if ((e.metaKey || e.ctrlKey) && selected !== null) {
+      const key = e.key.toLowerCase(); // Shift/CapsLock must not break the chord
+      if (key === 'c') {
+        e.preventDefault();
+        copyMeal(selected);
+        return;
+      }
+      if (key === 'v') {
+        e.preventDefault();
+        void pasteMeal(selected);
+        return;
+      }
+    }
     const delta = ARROW_DELTAS[e.key];
     if (delta === undefined) return;
     e.preventDefault();

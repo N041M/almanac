@@ -1,23 +1,22 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { mealsManifest } from '@almanac/meals';
-import type { ModuleManifest } from '@almanac/core';
+import { applyManifests, type ModuleManifest } from '@almanac/core';
 import { resources } from './resources';
 
 // Framework wiring for react-i18next; the core i18n service stays framework-
-// agnostic. English is the guaranteed-complete fallback (L7). Each module's
-// namespace comes from its manifest — the shell wires modules, never the
-// other way round (L1).
+// agnostic. English is the guaranteed-complete fallback (L7). Module
+// namespaces come from their manifests via the core's own folding — the shell
+// wires modules, never the other way round (L1).
 const manifests: ReadonlyArray<ModuleManifest> = [mealsManifest];
+const { bundles } = applyManifests(manifests);
 
-const withModules = structuredClone(resources) as Record<
-  string,
-  Record<string, Record<string, string>>
->;
-for (const manifest of manifests) {
-  for (const [language, messages] of Object.entries(manifest.messages ?? {})) {
-    (withModules[language] ??= {})[manifest.id] = messages;
-  }
+const withModules: Record<string, Record<string, Record<string, string>>> = {};
+for (const [language, shellNamespaces] of Object.entries(resources)) {
+  withModules[language] = { ...shellNamespaces, ...bundles[language] };
+}
+for (const [language, moduleNamespaces] of Object.entries(bundles)) {
+  withModules[language] ??= moduleNamespaces;
 }
 
 void i18n.use(initReactI18next).init({
