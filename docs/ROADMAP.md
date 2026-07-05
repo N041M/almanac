@@ -92,6 +92,11 @@ Degrade: permission denied/unsupported → quiet in-app badges; never nags (L5).
 - **Vault export/import**: full-store JSON backup (dump/restore every
   `StoragePort` key) — the pre-sync durability story; import is per-slice and
   skips corrupt entries (L5).
+- **`StoragePort` contract suite**: one reusable test suite every adapter
+  must pass (round-trips, `keys()` enumeration, `readMany` alignment,
+  corrupt-value isolation), run against memory, localStorage, and SQLite.
+  Rule from here on: **a port gets its contract suite before it gains its
+  next implementation** — Expo's adapter (P11) then just inherits it.
 
 ## Phase 6 — Tasks module additions (beyond the design doc §8)
 - **NL quick entry** on top of the sigil parser: "lunch with Anna tomorrow
@@ -99,6 +104,9 @@ Degrade: permission denied/unsupported → quiet in-app badges; never nags (L5).
 - Reminders per task/event (uses 5.3), default offsets in settings.
   **Snooze/actions** on fired reminders where the platform allows — a small
   additive `NotificationPort` extension; unsupported ⇒ plain notifications.
+  A **`NotificationPort` contract suite** lands with the first adapters
+  (Tauri + Web Notifications) — idempotent ids, no-op cancel, denied
+  permission as a normal state — so Expo's adapter (P11) inherits it.
 - Recurring events use 5.1 overrides for "edit this occurrence only";
   **"this and following"** = a series *split* (core `schedule/` helper: cap
   the old rule with `until`, spawn the successor) — the third standard edit
@@ -263,6 +271,15 @@ external call sits behind a port; every empty state is actionable.
 - **P10 entry:** spec the sync envelope + service before client wiring —
   revision semantics, clock-skew stance on modified-at, tombstone GC, key
   enumeration; the P6 delete decision becomes acceptance criteria here.
+- **P11 entry:** decide **React-Native-Web component sharing** explicitly
+  (the design doc allows it, never at the cost of L1) — if shared UI is
+  adopted, add the boundary-lint rule for that package *then*; shared logic
+  is already fork-proof (L1/L3 lint keeps `Platform.OS` unreachable).
+  Write the **capability-port contract suites** (barcode/camera) here,
+  before their first implementation. Mobile test stack: shared logic stays
+  Node-tested; jest-expo component tests per view; Maestro E2E on
+  emulators (nightly) incl. the L5 permission/offline rows; TestFlight +
+  Play internal track for device beta.
 - **P12 entry:** spec the server service (ACL model, invite routing,
   availability, booking endpoint) before client work — including the failure
   rows above as server acceptance criteria.
