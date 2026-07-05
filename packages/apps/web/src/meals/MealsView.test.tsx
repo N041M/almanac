@@ -23,6 +23,7 @@ beforeEach(async () => {
   });
   useMeals.setState({
     loaded: false,
+    loading: false,
     recipes: {},
     ingredients: {},
     items: [],

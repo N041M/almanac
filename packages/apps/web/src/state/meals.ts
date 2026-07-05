@@ -60,6 +60,8 @@ export function presetOf(weight: number): WeightPreset {
 
 interface MealsState {
   loaded: boolean;
+  /** True while the initial load is in flight (re-entrancy guard). */
+  loading: boolean;
   recipes: Readonly<Record<string, Recipe>>;
   ingredients: Readonly<Record<string, Ingredient>>;
   items: PlanItem[];
@@ -154,6 +156,7 @@ export const useMeals = create<MealsState>((set, get) => {
 
   return {
   loaded: false,
+  loading: false,
   recipes: {},
   ingredients: {},
   items: [],
@@ -166,7 +169,10 @@ export const useMeals = create<MealsState>((set, get) => {
   mealClipboard: null,
 
   load: async () => {
-    if (get().loaded) return;
+    // Guard synchronously (zustand set is sync): the calendar and meals views
+    // both call load() on mount; two concurrent loads would double-seed.
+    if (get().loaded || get().loading) return;
+    set({ loading: true });
     // First run: starter meals so every feature is exercisable immediately.
     // Tests seed explicitly; the flag keeps real deletions deleted.
     if (import.meta.env.MODE !== 'test') {
