@@ -18,8 +18,8 @@ Status: ✅ done · 🔨 in progress · — planned.
 | 2 | Calendar shell | tokens/dark UI, month/week/day views, keyboard grid, EN+CS, localStorage + SQLite `StoragePort` (Tauri) | ✅ |
 | 3 | Food kernel | Ingredient/Recipe/NutritionFacts; OFF adapter + caching + degradation | ✅ |
 | 4 | Meals module | §6 engine exactly, TDD + statistical suite; **module-manifest seam defined first**; meals UI (week grid, lock/re-roll, variety, breakdown, ingredients) | ✅ |
-| 5 | Calendar core v2 | recurrence v2 · timed/multi-day/timezone events · `NotificationPort` · hour-grid + agenda views · drag & drop · undo · settings surface · vault export/import | — |
-| 6 | Tasks module | tasks/events/habits on v2 primitives; NL quick entry; command palette; notifications wired | — |
+| 5 | Calendar core v2 | recurrence v2 · timed/multi-day/timezone events · `NotificationPort` · hour-grid + agenda views · drag & drop · undo · copy/paste · secondary TZ/working hours · settings surface · vault export/import | 🔨 |
+| 6 | Tasks module | tasks/events/habits on v2 primitives; multiple calendars (colors/visibility); NL quick entry; command palette; series split ("this and following"); notifications wired (+snooze) | — |
 | 7 | Macros + Shopping | both modules + UI; two-trigger aggregation (§8.1) | — |
 | 8 | Interop & findability | ICS import/export · calendar subscriptions · search · year view · printing | — |
 | 9 | Life modules | check-in · cycle · body · workouts · weather · insights · birthdays | — |
@@ -78,6 +78,13 @@ Degrade: permission denied/unsupported → quiet in-app badges; never nags (L5).
 - **Undo**: an app-level command stack (last N slice writes with inverse
   writes); `⌘Z` + a toast with "Undo". Trash/soft-delete is per-module state
   where destructive (tasks), not a core mechanism.
+- **Secondary time zone + working hours** (gap analysis 2026-07-05): an
+  optional second zone column on the hour grid; shaded non-working hours.
+  Both additive settings — unset ⇒ today's rendering, invalid zone ⇒ the
+  column quietly absent (L5).
+- *(Landed early, with meals:)* **day-entry copy/paste** — clipboard over day
+  slices, `⌘C`/`⌘V` on the grid + day-panel buttons; tasks/timed events join
+  the same seam here.
 
 ### 5.5 Settings & vault (apps/web renderer + core)
 - **Settings surface**: week-start day, locale, time format, default reminder
@@ -90,7 +97,17 @@ Degrade: permission denied/unsupported → quiet in-app badges; never nags (L5).
 - **NL quick entry** on top of the sigil parser: "lunch with Anna tomorrow
   13:00", EN + CS, pure logic + tests (dates/times/durations; locale-aware).
 - Reminders per task/event (uses 5.3), default offsets in settings.
-- Recurring events use 5.1 overrides for "edit this occurrence only".
+  **Snooze/actions** on fired reminders where the platform allows — a small
+  additive `NotificationPort` extension; unsupported ⇒ plain notifications.
+- Recurring events use 5.1 overrides for "edit this occurrence only";
+  **"this and following"** = a series *split* (core `schedule/` helper: cap
+  the old rule with `until`, spawn the successor) — the third standard edit
+  scope alongside "this one" and "all".
+- **Multiple calendars** (gap analysis 2026-07-05): user-defined calendars
+  ("Work", "Family") with a color and a visibility toggle each — the event
+  shape carries `calendarId` from day one; hiding a calendar is a view
+  filter, never deletion. (P12 sharing shares these same namespaces.)
+- **Jump-to-date** in the command palette.
 
 ## Phase 7 — Macros + Shopping (design doc §8.1, unchanged in content)
 Moved after tasks (was Phase 5) so the calendar is livable-in first; both
@@ -187,6 +204,8 @@ failures). A feature is not done until its row here is demonstrably true.
 | Undo | inverse write fails / stack lost on reload | that undo entry is dropped quietly; undo is best-effort session state, never a data authority |
 | Settings | settings slice corrupt/absent | locale + formatting defaults (EN, Intl-derived region); the app never blocks on settings |
 | Vault import | corrupt entries / unknown-version slices in the file | valid slices import, bad ones are skipped and counted; never aborts the file |
+| Copy/paste | empty clipboard / copying an empty day | quiet no-op; paste write failure degrades to session-only (as every write) |
+| Secondary TZ column | zone unset or invalid | the column is simply absent; the primary grid is untouched |
 
 ### Phases 6–9 — tasks, macros + shopping, interop, life modules
 
@@ -194,6 +213,10 @@ failures). A feature is not done until its row here is demonstrably true.
 |---|---|---|
 | NL quick entry | unparseable/ambiguous text | item is created with the raw text as title, no date — entry is **never blocked** by the parser; sigils still apply |
 | Reminders | no notification adapter | in-app due indicators only |
+| Reminder snooze/actions | platform doesn't support actions | plain notifications; snooze absent, never broken |
+| Multiple calendars | entry carries an unknown `calendarId` | rendered on the default calendar, never dropped |
+| Multiple calendars | calendar hidden | a view filter — entries stay stored, reminders still fire unless the calendar is muted explicitly |
+| Series split ("this and following") | split write fails midway | the original series stands untouched; the split is atomic-or-nothing |
 | ICS import | unparseable components | skipped and counted ("imported 34, skipped 2"), never aborts the file |
 | ICS import | oversized file | chunked with partial-import progress; cancel keeps what's in |
 | Subscriptions | offline / feed 404 / parse error | last cached copy, with a quiet staleness hint; feed removal deletes only that feed's entries |
@@ -230,6 +253,11 @@ external call sits behind a port; every empty state is actionable.
   semantics** — per-slice LWW needs deletion modeled (tombstones or a
   deleted-at field that participates in LWW), or a stale device resurrects
   deleted entries at P10. Cheap to decide now, a migration tax later.
+- **P6 entry, event shape (gap analysis 2026-07-05 — reserve now, UI later):**
+  `calendarId` (+ per-calendar color), **busy/free transparency** and
+  **visibility** flags (P12 free-busy depends on them), an optional
+  **location** field. Attachments are deliberately deferred — their storage
+  story arrives with sync (P10+).
 - **P8 entry:** pick the ICS strategy (own minimal parser vs vetted dep in the
   module) after checking dep size/quality then.
 - **P10 entry:** spec the sync envelope + service before client wiring —
