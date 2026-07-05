@@ -1,9 +1,9 @@
 # Almanac
 
-A **local-first personal calendar**. The calendar is the core; every feature is
-an independent **module** that plugs into a shared hub and never depends on
-another module. Runs offline, keeps sensitive data on-device, multilingual from
-day one. Meal-planning is the first module.
+A **personal calendar** with an offline-capable local store and (eventually)
+cross-device sync. The calendar is the core; every feature is an independent
+**module** that plugs into a shared hub and never depends on another module.
+Multilingual from day one. Meal-planning is the first module.
 
 ## Quickstart
 
@@ -22,8 +22,11 @@ ESLint `boundaries` · i18next (EN + CS) · Open Food Facts · Open-Meteo.
 
 ## Docs
 
-- **[docs/](docs/)** — architecture + UML, decisions, and the build journal ([docs/README.md](docs/README.md) indexes them).
+- **[docs/ROADMAP.md](docs/ROADMAP.md)** — the authoritative 12-phase build
+  sequence, incl. the L5 degradation matrix for every planned feature.
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — the laws, the dependency star, and UML diagrams.
+- **[docs/DECISIONS.md](docs/DECISIONS.md)** — decision log (D0–D5).
+- **[docs/BUILD_JOURNAL.md](docs/BUILD_JOURNAL.md)** — per-phase narrative.
 - **[CHANGELOG.md](CHANGELOG.md)** — what shipped, per phase.
 - **[ALMANAC_DESIGN_DOC.md](ALMANAC_DESIGN_DOC.md)** — the full handoff spec.
 
@@ -33,10 +36,12 @@ ESLint `boundaries` · i18next (EN + CS) · Open Food Facts · Open-Meteo.
 
 ## Status
 
-**Phase 1 (core) complete** — pure, framework-agnostic hub: day record + store,
-calendar model, recurrence, units, registry, i18n, ports (40 tests, zero UI deps).
-Phase 0 (scaffold) done before it. — workspaces, strict TS, boundary lint, Vitest,
-CI, i18n stubs; apps are stubs. Build phases: design doc §13.
+**Phase 2 (calendar shell) nearly complete** — month / week / day views with a
+view switcher, design tokens with system light+dark, keyboard-first grid
+(roving `aria-activedescendant` selection), EN/CS i18n, `localStorage`
+persistence through the versioned day-store; Tauri v2 shell compiles (icons
+in; native `StoragePort` still to come). Phases 0–1 (scaffold, core) complete.
+51 tests. Build sequence: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## The one-line why
 

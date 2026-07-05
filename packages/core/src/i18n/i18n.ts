@@ -1,4 +1,5 @@
 import type { ISODate } from '../time/iso-date.js';
+import { dateFromISO } from '../time/iso-date.js';
 import type { Locale } from './locale.js';
 import { bcp47 } from './locale.js';
 
@@ -52,8 +53,7 @@ export function createI18n(config: {
       return params === undefined ? template : interpolate(template, params);
     },
     formatDate(date, options) {
-      const [y, m, d] = date.split('-').map(Number) as [number, number, number];
-      const value = new Date(Date.UTC(y, m - 1, d));
+      const value = dateFromISO(date);
       const opts: Intl.DateTimeFormatOptions = {
         year: 'numeric',
         month: 'long',

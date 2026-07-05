@@ -25,6 +25,8 @@
       "@almanac/food": ["./packages/kernels/food/src/index.ts"],
       "@almanac/food/*": ["./packages/kernels/food/src/*"],
       "@almanac/meals": ["./packages/modules/meals/src/index.ts"],
+      "@almanac/tasks": ["./packages/modules/tasks/src/index.ts"],
+      "@almanac/tasks/*": ["./packages/modules/tasks/src/*"],
       "@almanac/meals/*": ["./packages/modules/meals/src/*"]
     }
   }

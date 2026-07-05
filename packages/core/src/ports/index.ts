@@ -6,4 +6,5 @@ export type { Rng } from './rng.js';
 export type { StoragePort } from './storage.js';
 export type { GeoCoordinates, WeatherSnapshot, WeatherPort } from './weather.js';
 export type { NutritionResult, NutritionPort } from './nutrition.js';
-export type { SyncRecord, SyncPort } from './sync.js';
+export type { NotificationPayload, NotificationPort } from './notification.js';
+export type { SyncRecord, SyncPullResult, SyncPort } from './sync.js';

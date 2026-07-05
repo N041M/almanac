@@ -5,5 +5,7 @@
   // editor). `pnpm typecheck` runs `tsc --noEmit` against this.
   "extends": "./tsconfig.base.json",
   "include": ["packages/**/*.ts", "packages/**/*.tsx"],
-  "exclude": ["**/dist/**", "**/node_modules/**"]
+  // The web app needs jsx + DOM libs the pure core must not have, so it is
+  // type-checked with its own config (see the `typecheck` script).
+  "exclude": ["**/dist/**", "**/node_modules/**", "packages/apps/web/**"]
 }

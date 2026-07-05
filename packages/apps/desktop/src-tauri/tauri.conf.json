@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Almanac",
+  "version": "0.0.0",
+  "identifier": "app.almanac.desktop",
+  "build": {
+    "frontendDist": "../../web/dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "pnpm --filter @almanac/web dev",
+    "beforeBuildCommand": "pnpm --filter @almanac/web build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Almanac",
+        "width": 1100,
+        "height": 720,
+        "minWidth": 480,
+        "minHeight": 480
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://world.openfoodfacts.org https://search.openfoodfacts.org"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/icon.png"]
+  }
+}

@@ -7,6 +7,78 @@ deferred, and anything we're unsure about.
 
 ---
 
+## Phase 2 — Desktop calendar shell (in progress)
+
+**Goal:** the calendar rendering Days end-to-end, in the shared renderer that is
+both the web port and the Tauri desktop frontend (decision D2/D3), with EN + CS.
+
+**What we built** (`packages/apps/web`): a Vite + React + Tailwind v4 renderer;
+a month grid driven by the core's `buildMonthGrid` (locale week-start, today and
+in/out-of-month styling, prev/next/today nav); react-i18next wired to a live
+EN/CS switch (weekday/month names from `Intl`); a `localStorage` `StoragePort`
+adapter + a Zustand store; and a small **demo "star a day" slice** that exercises
+the whole Day pipeline — write through the `DayStore`, read back on month load,
+render with the priority intensity scale.
+
+**Why the demo slice:** no real modules exist yet, so it's the smallest thing
+that proves the shell renders **Days from the store**, not just a static grid —
+persistence, sparse reads, and slice isolation all exercised through the UI.
+
+**Verified:** typecheck (core program + a separate web program for jsx/DOM),
+lint, `vite build`, and **3 jsdom/RTL tests** (grid renders, EN→CS relabels the
+UI, and select-then-star round-trips through storage). 43 tests total; the two
+Vitest projects (node + web) run under one `pnpm test`.
+
+**Continued (2026-07-02 → 07-03), in order:**
+- **Render verified for real:** headless-Chrome screenshots (EN, CS with
+  Monday week-start, star persistence) — jsdom proves behaviour, not looks.
+- **Full-repo sweep** (dead code / bugs / redundancies): the one real bug was
+  an unhandled rejection when a storage *write* failed (now optimistic +
+  quiet, L5); plus `<html lang>` sync, single ISO validation path, shared
+  `dateFromISO`/`MS_PER_DAY`, recurrence never-throws + window-skip perf,
+  removed dead files. Lesson logged: removing vitest `globals` silently
+  disabled RTL auto-cleanup — the suite had been leaning on it.
+- **D4** (see DECISIONS): L6 relaxed — server-durable, locally-cached;
+  `SyncPort` reshaped (batch push / pull-since-revision), `StoragePort` gained
+  optional `readMany` (month = one storage call), slice envelopes stamp
+  modified-at via injected `Clock` so data is sync-ready from day one.
+- **UI foundation:** semantic design tokens (`@theme`, system light+dark),
+  `ui/Button` primitive, card shell, keyboard-first grid (single tab stop,
+  roving `aria-activedescendant` selection crossing month edges), localized
+  cell labels, midnight-refreshing "today". Verified by screenshots in both
+  color schemes.
+- **Week + day views:** store re-anchored on a single date + view; segmented
+  Month/Week/Day switcher; nav steps by view; `Intl.formatRange` week titles;
+  calendar split into one-concern files (CalendarView / MonthGrid / WeekGrid /
+  DayCell / DayDetail / ViewSwitcher). Screenshots caught two things tests
+  couldn't: buttons center content (week numerals floated mid-cell) and the
+  day view double-titled itself.
+- **Roadmap + D5:** all mainstream-calendar gap features planned
+  (docs/ROADMAP.md, 12 phases) incl. multi-user (shared calendars, invites +
+  auto-accept whitelist, free-busy, booking) — each with an L5 degradation row
+  as acceptance criteria. Two contracts pinned for P6 entry (recurrence v2,
+  timed/multi-day/timezone events) so the tasks module can't persist events in
+  a pre-v2 shape.
+- **Tauri:** compiled on the user's machine once Rust + icons were in
+  (`generate_context!` initially failed on missing icons — placeholder set
+  generated and committed); real CSP replaces `csp: null`; `Cargo.lock`
+  tracked.
+
+**Verified:** `pnpm check` green throughout — **51 tests** (node + web
+projects); production `vite build`; screenshots for every visual change.
+
+**Honestly still open for Phase 2:**
+- Native **SQLite `StoragePort`** for the desktop build (localStorage stands in).
+- A post-CSP `tauri dev` sanity run on the user's machine.
+- **Config note:** the app uses extensionless relative imports (Vite/bundler
+  idiom) vs the libraries' explicit `.js`; typecheck is a two-step (core program
+  + the web program, which alone carries `jsx`/DOM libs — kept out of the core).
+
+**Next:** close the two open items above, then Phase 3 (food kernel) per
+[ROADMAP.md](ROADMAP.md).
+
+---
+
 ## Phase 1 — Core
 
 **Goal:** build the pure, framework-agnostic hub every module plugs into

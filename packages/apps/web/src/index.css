@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+/* ── Design tokens ───────────────────────────────────────────────────────
+   The visual base for all Almanac UI. Views and future module UIs use ONLY
+   these semantic tokens (bg-surface, text-ink, border-line, …) — never raw
+   palette colors — so themes stay coherent as modules land. Light and dark
+   follow the system preference. */
+:root {
+  color-scheme: light dark;
+
+  /* light */
+  --surface: oklch(97.5% 0.004 85);        /* app background (warm near-white) */
+  --surface-raised: oklch(100% 0 0);       /* cards, panels */
+  --ink: oklch(24% 0.012 270);             /* primary text */
+  --ink-muted: oklch(50% 0.014 270);       /* secondary text */
+  --ink-faint: oklch(74% 0.01 270);        /* disabled / out-of-month */
+  --line: oklch(90% 0.005 270);            /* hairline borders */
+  --accent: oklch(55% 0.15 262);           /* interactive / today */
+  --accent-ink: oklch(100% 0 0);           /* text on accent */
+  --accent-soft: oklch(94% 0.03 262);      /* selection wash */
+  --mark: oklch(72% 0.15 85);              /* day-cell contribution dot */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: oklch(18.5% 0.007 270);
+    --surface-raised: oklch(23% 0.008 270);
+    --ink: oklch(93% 0.006 270);
+    --ink-muted: oklch(68% 0.01 270);
+    --ink-faint: oklch(46% 0.01 270);
+    --line: oklch(30% 0.009 270);
+    --accent: oklch(70% 0.13 262);
+    --accent-ink: oklch(16% 0.01 262);
+    --accent-soft: oklch(30% 0.05 262);
+    --mark: oklch(78% 0.14 85);
+  }
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-mark: var(--mark);
+}
+
+body {
+  background-color: var(--surface);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}

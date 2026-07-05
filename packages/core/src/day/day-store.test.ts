@@ -1,8 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import { getSlice } from './day.js';
+import type { Day } from './day.js';
 import type { SliceCodec } from './slice-codec.js';
+import type { StoragePort } from '../ports/storage.js';
 import { createDayStore } from './day-store.js';
 import { createMemoryStorage } from './memory-storage.js';
+import { createFixedClock } from '../time/fixed-clock.js';
+
+/** The same storage without its batch read — exercises the fallback path. */
+function withoutReadMany(storage: StoragePort): StoragePort {
+  return {
+    read: (key) => storage.read(key),
+    write: (key, value) => storage.write(key, value),
+    remove: (key) => storage.remove(key),
+    keys: (prefix) => storage.keys(prefix),
+  };
+}
+
+/** `getSlice` over a possibly-absent Day (range indexing under strict TS). */
+function sliceOf<T>(day: Day | undefined, namespace: string): T | undefined {
+  return day === undefined ? undefined : getSlice<T>(day, namespace);
+}
 
 interface Mood {
   energy: number;
@@ -66,9 +84,49 @@ describe('DayStore', () => {
     expect(await store.readSlice('2026-07-01', tasksCodec)).toEqual([]);
   });
 
-  it('reads an inclusive date range', async () => {
-    const store = createDayStore(createMemoryStorage());
-    const days = await store.getRange('2026-07-01', '2026-07-03', [tasksCodec]);
-    expect(days.map((d) => d.date)).toEqual(['2026-07-01', '2026-07-02', '2026-07-03']);
+  it('reads an inclusive date range — identically via batch and fallback paths', async () => {
+    const storage = createMemoryStorage();
+    await createDayStore(storage).writeSlice('2026-07-02', tasksCodec, ['batch me']);
+
+    for (const port of [storage, withoutReadMany(storage)]) {
+      const days = await createDayStore(port).getRange('2026-07-01', '2026-07-03', [
+        moodCodec,
+        tasksCodec,
+      ]);
+      expect(days.map((d) => d.date)).toEqual(['2026-07-01', '2026-07-02', '2026-07-03']);
+      expect(sliceOf<string[]>(days[1], 'tasks')).toEqual(['batch me']);
+      expect(sliceOf<Mood>(days[0], 'checkin')).toEqual({ energy: 0 });
+    }
+  });
+
+  it('a corrupt slice inside a batched range still degrades in isolation (L5)', async () => {
+    const storage = createMemoryStorage({
+      'day:2026-07-02:checkin': 'not even json',
+    });
+    const store = createDayStore(storage);
+    await store.writeSlice('2026-07-02', tasksCodec, ['fine']);
+    const days = await store.getRange('2026-07-02', '2026-07-02', [moodCodec, tasksCodec]);
+    expect(sliceOf<Mood>(days[0], 'checkin')).toEqual({ energy: 0 });
+    expect(sliceOf<string[]>(days[0], 'tasks')).toEqual(['fine']);
+  });
+
+  it('stamps writes with modified-at when a clock is injected (sync-ready, D4)', async () => {
+    const storage = createMemoryStorage();
+    const clocked = createDayStore(storage, createFixedClock(1_750_000_000_000));
+    await clocked.writeSlice('2026-07-01', moodCodec, { energy: 3 });
+    const raw = await storage.read('day:2026-07-01:checkin');
+    expect(JSON.parse(raw ?? '{}')).toEqual({
+      v: 1,
+      d: { energy: 3 },
+      m: 1_750_000_000_000,
+    });
+
+    // No clock → no timestamp; both shapes read back fine.
+    const unclocked = createDayStore(storage);
+    await unclocked.writeSlice('2026-07-02', moodCodec, { energy: 5 });
+    const raw2 = await storage.read('day:2026-07-02:checkin');
+    expect(JSON.parse(raw2 ?? '{}')).toEqual({ v: 1, d: { energy: 5 } });
+    expect(await clocked.readSlice('2026-07-02', moodCodec)).toEqual({ energy: 5 });
+    expect(await unclocked.readSlice('2026-07-01', moodCodec)).toEqual({ energy: 3 });
   });
 });

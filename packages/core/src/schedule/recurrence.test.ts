@@ -65,4 +65,26 @@ describe('occurrencesInRange', () => {
     const rule: Recurrence = { freq: 'daily', start: '2026-07-01' };
     expect(occurrencesInRange(rule, '2026-07-10', '2026-07-01')).toEqual([]);
   });
+
+  it('malformed dates degrade to [] instead of throwing (L5)', () => {
+    const rule: Recurrence = { freq: 'daily', start: 'garbage' };
+    expect(occurrencesInRange(rule, '2026-07-01', '2026-07-10')).toEqual([]);
+    const ok: Recurrence = { freq: 'daily', start: '2026-07-01', until: '2026-02-30' };
+    expect(occurrencesInRange(ok, '2026-07-01', '2026-07-10')).toEqual([]);
+    expect(occurrencesInRange({ freq: 'daily', start: '2026-07-01' }, 'nope', '2026-07-10')).toEqual([]);
+  });
+
+  it('a rule started years earlier stays correct when the walk skips to the window', () => {
+    // bi-weekly Wednesdays anchored in 2020; phase must survive the cursor jump
+    const rule: Recurrence = {
+      freq: 'weekly',
+      start: '2020-01-01', // a Wednesday
+      interval: 2,
+      byWeekday: [3],
+    };
+    expect(occurrencesInRange(rule, '2026-07-01', '2026-07-31')).toEqual([
+      '2026-07-08',
+      '2026-07-22',
+    ]);
+  });
 });
