@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { bcp47, dateFromISO, type ISODate } from '@almanac/core';
 import { useCalendar } from '../state/store';
 import { useMeals } from '../state/meals';
+import { useTasks } from '../state/tasks';
 import { Button } from '../ui/Button';
 
 /**
@@ -39,9 +40,16 @@ export function DayDetail({
     return s.recipes[recipeId]?.name ?? null;
   });
 
+  const loadTasks = useTasks((s) => s.load);
+  const toggleDone = useTasks((s) => s.toggleDone);
+  const occurrences = useTasks((s) => s.occurrences);
+  useTasks((s) => s.items); // re-render on task changes
+  const dayTasks = occurrences(date, date).get(date) ?? [];
+
   useEffect(() => {
     void load().then(() => loadDayMeal(date));
-  }, [load, loadDayMeal, date]);
+    void loadTasks();
+  }, [load, loadDayMeal, loadTasks, date]);
 
   const label = new Intl.DateTimeFormat(bcp47(locale), {
     weekday: 'long',
@@ -55,12 +63,41 @@ export function DayDetail({
   return (
     <div className="space-y-4">
       {heading && <h3 className="font-semibold capitalize">{label}</h3>}
-      {plannedMeal !== undefined ? (
+      {plannedMeal !== undefined && (
         <p className="text-sm">
           <span className="text-ink-muted">{t('meals:plannedMeal')}: </span>
           {plannedMeal ?? t('meals:removedMeal')}
         </p>
-      ) : (
+      )}
+      {dayTasks.length > 0 && (
+        <ul className="space-y-1.5">
+          {dayTasks.map((occurrence) => (
+            <li key={occurrence.item.id} className="flex items-center gap-2 text-sm">
+              {occurrence.item.kind === 'task' ? (
+                <input
+                  type="checkbox"
+                  checked={occurrence.item.doneAt !== null}
+                  aria-label={occurrence.item.title}
+                  onChange={() => void toggleDone(occurrence.item.id)}
+                  className="accent-accent"
+                />
+              ) : (
+                <span aria-hidden="true">•</span>
+              )}
+              <span
+                className={
+                  occurrence.item.kind === 'task' && occurrence.item.doneAt !== null
+                    ? 'text-ink-muted line-through'
+                    : ''
+                }
+              >
+                {occurrence.changes?.title ?? occurrence.item.title}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {plannedMeal === undefined && dayTasks.length === 0 && (
         <p className="text-sm text-ink-muted">{t('noEntries')}</p>
       )}
       <div className="flex flex-wrap gap-2">

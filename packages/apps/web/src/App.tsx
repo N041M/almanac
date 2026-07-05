@@ -7,10 +7,12 @@ import { useUndo } from './state/undo';
 import { CalendarView } from './calendar/CalendarView';
 import { DayPanel } from './calendar/DayPanel';
 import { MealsView } from './meals/MealsView';
+import { TasksView } from './tasks/TasksView';
 import { SettingsView } from './settings/SettingsView';
+import { CommandPalette } from './palette/CommandPalette';
 import { Button } from './ui/Button';
 
-type Screen = 'calendar' | 'meals' | 'settings';
+type Screen = 'calendar' | 'tasks' | 'meals' | 'settings';
 
 /** The 5.4 undo toast: names the last action, offers Undo, fades on its own. */
 function UndoToast() {
@@ -49,17 +51,25 @@ export function App() {
   const loadSettings = useSettings((s) => s.load);
   const rememberLanguage = useSettings((s) => s.rememberLanguage);
   const [screen, setScreen] = useState<Screen>('calendar');
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   // Restore persisted settings (incl. language) once, at startup.
   useEffect(() => {
     void loadSettings();
   }, [loadSettings]);
 
-  // ⌘Z anywhere undoes the last slice write — unless focus is in a field,
-  // where the platform's own text undo must win.
+  // ⌘Z undoes the last slice write (not in text fields, where the platform's
+  // own undo wins); ⌘K opens the command palette anywhere.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
-      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z' || e.shiftKey) return;
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey) return;
+      const key = e.key.toLowerCase();
+      if (key === 'k') {
+        e.preventDefault();
+        setPaletteOpen((was) => !was);
+        return;
+      }
+      if (key !== 'z') return;
       const target = e.target as HTMLElement | null;
       if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
       e.preventDefault();
@@ -90,6 +100,7 @@ export function App() {
         <h1 className="text-lg font-semibold tracking-tight">{t('title')}</h1>
         <nav aria-label={t('navigation')} className="flex gap-1">
           {tab('calendar', t('navCalendar'))}
+          {tab('tasks', t('tasks:title'))}
           {tab('meals', t('meals:title'))}
           {tab('settings', t('navSettings'))}
         </nav>
@@ -110,6 +121,11 @@ export function App() {
         </label>
       </header>
 
+      {screen === 'tasks' && (
+        <main className="mx-auto max-w-3xl p-6">
+          <TasksView />
+        </main>
+      )}
       {screen === 'meals' && (
         <main className="mx-auto max-w-5xl p-6">
           <MealsView />
@@ -140,6 +156,11 @@ export function App() {
           )}
         </main>
       )}
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onNavigate={setScreen}
+      />
       <UndoToast />
     </div>
   );

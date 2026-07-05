@@ -19,7 +19,7 @@ Status: ✅ done · 🔨 in progress · — planned.
 | 3 | Food kernel | Ingredient/Recipe/NutritionFacts; OFF adapter + caching + degradation | ✅ |
 | 4 | Meals module | §6 engine exactly, TDD + statistical suite; **module-manifest seam defined first**; meals UI (week grid, lock/re-roll, variety, breakdown, ingredients) | ✅ |
 | 5 | Calendar core v2 | recurrence v2 · timed/multi-day/timezone events · `NotificationPort` · hour-grid + agenda views · drag & drop · undo · copy/paste · settings surface · vault export/import · `StoragePort` contract suite (secondary TZ/working hours + notification adapters land with P6, alongside their first consumers) | ✅ |
-| 6 | Tasks module | tasks/events/habits on v2 primitives; multiple calendars (colors/visibility); NL quick entry; command palette; series split ("this and following"); notifications wired (+snooze) | — |
+| 6 | Tasks module | tasks/events/habits on v2 primitives; multiple calendars (colors/visibility); NL quick entry + picker composer; command palette; series split; notifications wired (snooze deferred: no platform support yet — plain notifications per the L5 row; habit-editing UI rides a later pass) | ✅ |
 | 7 | Macros + Shopping | both modules + UI; two-trigger aggregation (§8.1) | — |
 | 8 | Interop & findability | ICS import/export · calendar subscriptions · search · year view · printing | — |
 | 9 | Life modules | check-in · cycle · body · workouts · weather · insights · birthdays | — |

@@ -12,6 +12,8 @@ interface DayCellProps {
   isStarred: boolean;
   /** The day's meal contribution, already resolved to a display name. */
   chip?: string | undefined;
+  /** Open task/event titles on this day (rendered compactly, max two + count). */
+  tasks?: string[];
   onSelect: (date: ISODate) => void;
   /** Present ⇒ cells accept drops and chips are draggable (5.4 DnD). */
   onDropEntry?: (from: ISODate, to: ISODate) => void;
@@ -30,6 +32,7 @@ export function DayCell({
   isSelected,
   isStarred,
   chip,
+  tasks = [],
   onSelect,
   onDropEntry,
   shapeClass,
@@ -81,6 +84,17 @@ export function DayCell({
         >
           {chip}
         </span>
+      )}
+      {tasks.slice(0, 2).map((title, i) => (
+        <span
+          key={`${title}-${i}`}
+          className="max-w-full truncate text-[11px] leading-tight text-ink-muted"
+        >
+          • {title}
+        </span>
+      ))}
+      {tasks.length > 2 && (
+        <span className="text-[11px] leading-tight text-ink-faint">+{tasks.length - 2}</span>
       )}
       {isStarred && (
         <span

@@ -25,7 +25,7 @@ export function WeekGrid({
   const selected = useCalendar((s) => s.selected);
   const starred = useCalendar((s) => s.starred);
   const select = useCalendar((s) => s.select);
-  const { chipFor, onDropEntry } = useDayChips();
+  const { chipFor, tasksFor, onDropEntry } = useDayChips();
 
   return (
     <div
@@ -59,6 +59,7 @@ export function WeekGrid({
             isSelected={date === selected}
             isStarred={starred[date] ?? false}
             chip={chipFor(date)}
+            tasks={tasksFor(date)}
             onSelect={select}
             onDropEntry={onDropEntry}
             shapeClass="min-h-48"

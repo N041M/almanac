@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Weekday } from '@almanac/core';
 import { CS_CZ, EN_US } from '@almanac/core';
+import { notificationPort } from '../notifications/create-notification-port';
 import { storagePort } from './persistence';
 import { useCalendar } from './store';
 import { systemClock } from '../clock';
@@ -14,6 +15,8 @@ interface PersistedSettings {
   weekStartsOn?: Weekday;
   timeFormat?: '12h' | '24h';
   language?: string;
+  remindersEnabled?: boolean;
+  reminderOffsetMin?: number;
 }
 
 interface SettingsState {
@@ -21,10 +24,17 @@ interface SettingsState {
   /** null = follow the locale (L5: unset means today's behaviour). */
   weekStartsOn: Weekday | null;
   timeFormat: TimeFormat;
+  /** Off by default; enabling asks the platform once — denied stays off, quietly. */
+  remindersEnabled: boolean;
+  /** Minutes before the due time (P6: default offsets in settings). */
+  reminderOffsetMin: number;
 
   load: () => Promise<void>;
   setWeekStartsOn: (weekday: Weekday | null) => Promise<void>;
   setTimeFormat: (format: TimeFormat) => Promise<void>;
+  /** Returns the resulting enabled state (permission may say no, quietly). */
+  setRemindersEnabled: (enabled: boolean) => Promise<boolean>;
+  setReminderOffsetMin: (minutes: number) => Promise<void>;
   /** Persist the language choice so a restart keeps it (the header sets locale). */
   rememberLanguage: (language: string) => Promise<void>;
   /** Vault (5.5): the whole on-device store as one JSON document. */
@@ -49,6 +59,10 @@ function decode(raw: string | null): PersistedSettings {
     }
     if (d['timeFormat'] === '12h' || d['timeFormat'] === '24h') out.timeFormat = d['timeFormat'];
     if (typeof d['language'] === 'string') out.language = d['language'];
+    if (d['remindersEnabled'] === true) out.remindersEnabled = true;
+    if (typeof d['reminderOffsetMin'] === 'number' && d['reminderOffsetMin'] >= 0) {
+      out.reminderOffsetMin = d['reminderOffsetMin'];
+    }
     return out;
   } catch {
     return {}; // corrupt settings slice → defaults, the app never blocks (L5)
@@ -73,6 +87,8 @@ export const useSettings = create<SettingsState>((set, get) => {
     loaded: false,
     weekStartsOn: null,
     timeFormat: null,
+    remindersEnabled: false,
+    reminderOffsetMin: 10,
 
     load: async () => {
       if (get().loaded) return;
@@ -86,6 +102,8 @@ export const useSettings = create<SettingsState>((set, get) => {
         loaded: true,
         weekStartsOn: stored.weekStartsOn ?? null,
         timeFormat: stored.timeFormat ?? null,
+        remindersEnabled: stored.remindersEnabled ?? false,
+        reminderOffsetMin: stored.reminderOffsetMin ?? 10,
       });
       // Restore the language choice (the locale carries formatting too).
       if (stored.language === 'cs' || stored.language === 'en') {
@@ -113,6 +131,26 @@ export const useSettings = create<SettingsState>((set, get) => {
       persist((d) => {
         d.language = language;
       }),
+
+    setRemindersEnabled: async (enabled) => {
+      // Enabling needs the platform's blessing; denial stays off — asked
+      // once, never nagging (5.3 L5 row).
+      const granted = enabled ? await notificationPort.requestPermission() : false;
+      const next = enabled && granted;
+      set({ remindersEnabled: next });
+      await persist((d) => {
+        if (next) d.remindersEnabled = true;
+        else delete d.remindersEnabled;
+      });
+      return next;
+    },
+
+    setReminderOffsetMin: async (minutes) => {
+      set({ reminderOffsetMin: minutes });
+      await persist((d) => {
+        d.reminderOffsetMin = minutes;
+      });
+    },
 
     exportVault: async () => {
       const keys = await storagePort.keys();

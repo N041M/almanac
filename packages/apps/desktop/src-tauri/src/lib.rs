@@ -6,6 +6,7 @@ pub fn run() {
         // SQLite behind the renderer's `StoragePort` (L6); the capability file
         // scopes which windows may reach it.
         .plugin(tauri_plugin_sql::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
         .run(tauri::generate_context!())
         .expect("error while running Almanac");
 }

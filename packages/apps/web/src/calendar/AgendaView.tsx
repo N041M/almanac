@@ -4,6 +4,7 @@ import { MEALS_NAMESPACE, type MealsDaySlice } from '@almanac/meals';
 import type { DayMark } from '../state/day-mark';
 import { useCalendar } from '../state/store';
 import { useMeals } from '../state/meals';
+import { useTasks } from '../state/tasks';
 import { AGENDA_DAYS } from './CalendarView';
 
 /**
@@ -26,6 +27,10 @@ export function AgendaView({ start }: { start: ISODate }) {
     timeZone: 'UTC',
   });
 
+  const occurrences = useTasks((s) => s.occurrences);
+  useTasks((s) => s.items); // re-render on task changes
+  const taskMap = occurrences(start, addDays(start, AGENDA_DAYS - 1));
+
   const rows = Array.from({ length: AGENDA_DAYS }, (_, i) => addDays(start, i))
     .map((date) => {
       const day = days[date];
@@ -35,9 +40,12 @@ export function AgendaView({ start }: { start: ISODate }) {
         meal?.recipeId == null
           ? undefined
           : (recipes[meal.recipeId]?.name ?? t('meals:removedMeal'));
-      return { date, mealName, starred };
+      const tasks = (taskMap.get(date) ?? [])
+        .filter((o) => !(o.item.kind === 'task' && o.item.doneAt !== null))
+        .map((o) => o.changes?.title ?? o.item.title);
+      return { date, mealName, starred, tasks };
     })
-    .filter((row) => row.mealName !== undefined || row.starred);
+    .filter((row) => row.mealName !== undefined || row.starred || row.tasks.length > 0);
 
   if (rows.length === 0) {
     return <p className="px-2 py-4 text-sm text-ink-muted">{t('agendaEmpty')}</p>;
@@ -45,7 +53,7 @@ export function AgendaView({ start }: { start: ISODate }) {
 
   return (
     <ol className="divide-y divide-line">
-      {rows.map(({ date, mealName, starred }) => (
+      {rows.map(({ date, mealName, starred, tasks }) => (
         <li key={date}>
           <button
             type="button"
@@ -59,6 +67,11 @@ export function AgendaView({ start }: { start: ISODate }) {
               {dayFormat.format(dateFromISO(date))}
             </span>
             <span className="min-w-0 flex-1 truncate text-sm">
+              {tasks.map((title) => (
+                <span key={title} className="mr-3">
+                  • {title}
+                </span>
+              ))}
               {mealName !== undefined && (
                 <>
                   <span className="text-ink-muted">{t('meals:plannedMeal')}: </span>

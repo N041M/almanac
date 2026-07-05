@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { bcp47, MS_PER_DAY, type Weekday } from '@almanac/core';
 import { useCalendar } from '../state/store';
 import { useSettings } from '../state/settings';
+import { syncReminders, useTasks } from '../state/tasks';
 import { Button } from '../ui/Button';
+import { CalendarsManager } from './CalendarsManager';
 
 const WEEK_STARTS: Weekday[] = [1, 6, 0]; // Monday, Saturday, Sunday
 
@@ -22,6 +24,10 @@ export function SettingsView() {
   const timeFormat = useSettings((s) => s.timeFormat);
   const setWeekStartsOn = useSettings((s) => s.setWeekStartsOn);
   const setTimeFormat = useSettings((s) => s.setTimeFormat);
+  const remindersEnabled = useSettings((s) => s.remindersEnabled);
+  const reminderOffsetMin = useSettings((s) => s.reminderOffsetMin);
+  const setRemindersEnabled = useSettings((s) => s.setRemindersEnabled);
+  const setReminderOffsetMin = useSettings((s) => s.setReminderOffsetMin);
   const exportVault = useSettings((s) => s.exportVault);
   const importVault = useSettings((s) => s.importVault);
 
@@ -90,7 +96,45 @@ export function SettingsView() {
             <option value="24h">{t('time24')}</option>
           </select>
         </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          {t('reminders')}
+          <input
+            type="checkbox"
+            aria-label={t('reminders')}
+            checked={remindersEnabled}
+            onChange={(e) =>
+              void setRemindersEnabled(e.target.checked).then(() =>
+                syncReminders(useTasks.getState().items),
+              )
+            }
+            className="accent-accent"
+          />
+        </label>
+        {remindersEnabled && (
+          <label className="flex items-center justify-between gap-3 text-sm">
+            {t('reminderOffset')}
+            <select
+              aria-label={t('reminderOffset')}
+              value={reminderOffsetMin}
+              onChange={(e) =>
+                void setReminderOffsetMin(Number(e.target.value)).then(() =>
+                  syncReminders(useTasks.getState().items),
+                )
+              }
+              className={selectClass}
+            >
+              <option value={0}>{t('atDueTime')}</option>
+              {[5, 10, 30, 60].map((minutes) => (
+                <option key={minutes} value={minutes}>
+                  {t('minutesBefore', { count: minutes })}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </section>
+
+      <CalendarsManager />
 
       <section className="space-y-3 rounded-2xl border border-line bg-surface-raised p-4 shadow-sm">
         <h2 className="font-semibold">{t('vault')}</h2>
