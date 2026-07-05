@@ -5,6 +5,40 @@ to depart on), with rationale. Newest first. Keep entries short.
 
 ---
 
+## D7 — Event/task shape pinned before the first event persists
+
+**Decided:** 2026-07-05 · **Status:** accepted · **Design ref:** §8 tasks, ROADMAP P6 entry
+
+The tasks module's three primitives (task · event · habit — distinct kinds
+that must not blur) share a base shape carrying the fields whose late addition
+would cost a migration:
+- `calendarId?` — multiple calendars (color + visibility are calendar-level
+  state, not per-entry).
+- `transparency?: 'busy' | 'free'` — feeds P12 free-busy; default busy.
+- `visibility?: 'private'` — show-as-busy-only under P12 sharing.
+- `place?` — physical location (maps later). The §8 `@home/@work` axis is a
+  separate field, `contexts: string[]` — context ≠ place.
+- Timed *events* use the 5.2 contract (`TimedSpan`, absolute UTC + display
+  zone). Task due *times* are deliberately **floating wall-clock**
+  (`{date, minutes}`): "pay rent at 09:00" means 09:00 wherever you wake up.
+- Recurrence rides the core primitive; per-instance edits are 5.1 override
+  records stored with the owning item.
+
+## D6 — Deletion syncs as tombstones (entity records are never hard-removed)
+
+**Decided:** 2026-07-05 · **Status:** accepted · **Design ref:** §11, D4, ROADMAP P6/P10 markers
+
+Per-slice LWW can resurrect hard-deleted records (a stale device re-pushes an
+old revision). So, for **entity records** (tasks items now; catalog records
+before P10):
+- Delete = write a **tombstone envelope** `{v, d: null, m, del: true}` — an
+  ordinary LWW write that carries its modified-at. Readers treat it as absent;
+  saving again later revives the id (that's an edit, not a resurrection).
+- **Per-day slices** need no tombstones: writing the empty slice *is* the
+  deletion and already carries `m`.
+- Tombstone GC is a server concern, specced at P10 entry (needs the sync
+  horizon).
+
 ## D5 — Multi-user features planned (supersedes design doc §15's exclusion)
 
 **Decided:** 2026-07-03 · **Status:** accepted · **Design ref:** §15 · Builds on D1/D4
