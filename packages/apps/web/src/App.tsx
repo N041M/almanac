@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { EN_US, CS_CZ } from '@almanac/core';
 import { useCalendar } from './state/store';
 import { useSettings } from './state/settings';
+import { useSubscriptions } from './state/subscriptions';
 import { useUndo } from './state/undo';
 import { CalendarView } from './calendar/CalendarView';
 import { DayPanel } from './calendar/DayPanel';
@@ -27,6 +28,7 @@ function UndoToast() {
   return (
     <div
       role="status"
+      data-no-print
       className="fixed bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-line bg-surface-raised px-4 py-2 text-sm shadow-lg"
     >
       <span>{t(toastKey)}</span>
@@ -55,9 +57,11 @@ export function App() {
   const [screen, setScreen] = useState<Screen>('calendar');
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  // Restore persisted settings (incl. language) once, at startup.
+  // Restore persisted settings (incl. language) and subscribed feeds once, at
+  // startup — feeds render from cache immediately and refresh in the background.
   useEffect(() => {
     void loadSettings();
+    void useSubscriptions.getState().load();
   }, [loadSettings]);
 
   // ⌘Z undoes the last slice write (not in text fields, where the platform's

@@ -15,15 +15,12 @@ import { useSettings } from './settings';
 import { storagePort } from './persistence';
 import { useCalendar } from './store';
 import { useUndo } from './undo';
+import { viewerZone } from './viewer-zone';
 import { systemClock, today } from '../clock';
 
 // Composition root for the tasks module (L1: the app wires it, modules never
 // see each other). Entity records, D6 tombstones underneath.
 const tasksStore = createTasksStore(storagePort, systemClock);
-
-// The app layer is the sanctioned edge for the viewer's zone (L4) — timed
-// spans resolve their display days against it (5.2 fallback chain).
-const viewerZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 /** Local wall-clock date+minutes → absolute UTC ms (the app is the L4 edge). */
 export function wallClockToUtc(date: ISODate, minutes: number): number {

@@ -11,4 +11,13 @@ export const cs: Messages = {
   exportFrom: 'Od',
   exportTo: 'Do',
   nothingToExport: 'V tomto období nejsou žádné události.',
+  subscriptions: 'Odběry',
+  subscriptionsHint: 'Sledujte kalendářový kanál jen pro čtení (svátky, sdílená .ics adresa). Obnovuje se při otevření; offline zobrazí poslední kopii.',
+  feedUrl: 'Adresa kanálu (.ics)',
+  feedName: 'Název',
+  addFeed: 'Odebírat',
+  removeFeed: 'Odebrat {{name}}',
+  refreshFeed: 'Obnovit',
+  feedStale: 'Zobrazuje se poslední uložená kopie.',
+  noFeeds: 'Zatím žádné odběry.',
 };

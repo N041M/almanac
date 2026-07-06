@@ -8,16 +8,21 @@ const VIEWS: { view: CalendarView; labelKey: string }[] = [
   { view: 'timeline', labelKey: 'viewTimeline' },
   { view: 'day', labelKey: 'viewDay' },
   { view: 'agenda', labelKey: 'viewAgenda' },
+  { view: 'year', labelKey: 'viewYear' },
 ];
 
-/** Segmented view control (5.4: Month · Week · Timeline · Day · Agenda). */
+/** Segmented view control (5.4 + P8 year): Month · Week · Timeline · Day · Agenda · Year. */
 export function ViewSwitcher() {
   const { t } = useTranslation();
   const active = useCalendar((s) => s.view);
   const setView = useCalendar((s) => s.setView);
 
   return (
-    <div role="group" className="inline-flex overflow-hidden rounded-lg border border-line">
+    <div
+      role="group"
+      data-no-print
+      className="inline-flex overflow-hidden rounded-lg border border-line"
+    >
       {VIEWS.map(({ view, labelKey }) => (
         <button
           key={view}

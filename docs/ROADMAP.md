@@ -21,7 +21,7 @@ Status: ✅ done · 🔨 in progress · — planned.
 | 5 | Calendar core v2 | recurrence v2 · timed/multi-day/timezone events · `NotificationPort` · hour-grid + agenda views · drag & drop · undo · copy/paste · settings surface · vault export/import · `StoragePort` contract suite (secondary TZ/working hours + notification adapters land with P6, alongside their first consumers) | ✅ |
 | 6 | Tasks module | tasks/events/habits on v2 primitives; multiple calendars (colors/visibility); NL quick entry + picker composer; command palette; series split; notifications wired (snooze deferred: no platform support yet — plain notifications per the L5 row; habit-editing UI rides a later pass) | ✅ |
 | 7 | Macros + Shopping | both modules + UI; two-trigger aggregation (§8.1) | ✅ |
-| 8 | Interop & findability | ICS import/export · calendar subscriptions · search · year view · printing | — |
+| 8 | Interop & findability | ICS import/export · calendar subscriptions · search · year view · printing | ✅ |
 | 9 | Life modules | check-in · cycle · body · workouts · weather · insights · birthdays | — |
 | 10 | Sync | D1/D4: accounts, per-slice LWW revision sync, server-durable | — |
 | 11 | Mobile + surfaces | Expo client · widgets · tray mini-calendar · polish | — |
@@ -142,21 +142,30 @@ seam), never by import; the app shell composes the cross-module read. Notes:
   shopping aggregates **one recipe instance per planned occurrence** — the
   correct reading against the actual kernel; multiplying would double-count.
 
-## Phase 8 — Interop & findability
-- **ICS import/export** (module `calendar-interop`): RFC 5545 parse/serialize
-  (own small parser or vetted dep isolated in the module); import → events in
-  the module's slice; export any date range. Degrade: unparseable components
-  are skipped and reported, never abort the file.
-- **Subscriptions**: read-only ICS feeds (holidays, school, partner's shared
-  URL) behind a `FeedPort` (fetch + cache + refresh interval). Offline → last
-  cached feed. CalDAV two-way is explicitly *not* attempted before sync (P10)
-  exists; revisit after.
-- **Search** (module `search`): on-demand index over shared day records +
-  module-registered text extractors (a manifest capability); surfaced in the
-  command palette. No provider registered for a module → its data simply
-  isn't searchable (L5).
-- **Year view** (12-month density grid) and **print stylesheet** for
-  month/week/agenda.
+## Phase 8 — Interop & findability ✅
+- **ICS import/export** (module `calendar-interop`): RFC 5545 parse/serialize.
+  **P8-entry decision: own minimal parser** (no external dep) — the subset we
+  need (VEVENT: DTSTART/DTEND/SUMMARY/RRULE/EXDATE, all-day + UTC + TZID) maps
+  directly onto core's `Recurrence` + `TimedSpan`, so a dep like ical.js added
+  weight and ESM friction for no gain (L3). The module is a **pure transform**
+  between ICS and a neutral `CalendarEvent` DTO; it imports no other module —
+  the **app** maps the DTO onto the tasks event shape and back (L1). Import
+  lands events in the tasks store; export serializes any range keeping series
+  intact. Degrade: a bad VEVENT is skipped + counted, garbage never throws.
+- **Subscriptions**: read-only ICS feeds behind a core **`FeedPort`** (fetch;
+  the app adapter uses `fetch`). The subscriptions store caches the raw ICS so
+  it works offline; a failed refresh keeps the cached copy and flags it stale
+  (L5). Feed events surface as read-only chips through the grid's `use-day-chips`
+  seam; removing a feed drops only its entries. CalDAV two-way still deferred
+  to after sync (P10).
+- **Search** (module `search`): pure on-demand ranked query (title-prefix >
+  title > keyword, AND across terms). The **app** assembles the corpus from
+  every module's state (tasks + meals now) — a source that contributes nothing
+  simply isn't searchable (L5). Folded into the ⌘K command palette below command
+  matches; a dated hit jumps the calendar.
+- **Year view** (12-month density grid, four-level intensity from meals + stars
+  + task/event occurrences; click a day to zoom to its month) and a **print
+  stylesheet** (`@media print`: light ink, chrome hidden via `data-no-print`).
 
 ## Phase 9 — Life modules (design doc §8, unchanged)
 check-in · cycle · body · workouts · weather (signal provider) · insights ·
@@ -286,8 +295,9 @@ external call sits behind a port; every empty state is actionable.
   **visibility** flags (P12 free-busy depends on them), an optional
   **location** field. Attachments are deliberately deferred — their storage
   story arrives with sync (P10+).
-- **P8 entry:** pick the ICS strategy (own minimal parser vs vetted dep in the
-  module) after checking dep size/quality then.
+- **P8 entry:** ~~pick the ICS strategy~~ **decided: own minimal parser** — the
+  needed subset maps straight onto core's `Recurrence`/`TimedSpan`, so a dep
+  added weight + ESM friction for no gain (module stays core-only, L3).
 - **P10 entry:** spec the sync envelope + service before client wiring —
   revision semantics, clock-skew stance on modified-at, tombstone GC, key
   enumeration; the P6 delete decision becomes acceptance criteria here.

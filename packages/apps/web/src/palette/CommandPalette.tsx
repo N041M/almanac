@@ -1,9 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ISODate } from '@almanac/core';
 import { parseQuickEntry } from '@almanac/tasks';
+import { searchDocs, type SearchDoc } from '@almanac/search';
 import { useCalendar, type CalendarView } from '../state/store';
 import { useCalendars, DEFAULT_CALENDAR_ID } from '../state/calendars';
+import { useTasks } from '../state/tasks';
+import { useMeals } from '../state/meals';
+import { collectSearchDocs } from '../state/search-sources';
 import { today } from '../clock';
+
+type Screen = 'calendar' | 'tasks' | 'meals' | 'shopping' | 'macros' | 'settings';
+
+/** Search-doc kind → its i18n key (missing kinds fall back to the raw kind). */
+const KIND_KEY: Record<string, string> = {
+  task: 'kindTask',
+  event: 'kindEvent',
+  habit: 'kindHabit',
+  recipe: 'kindRecipe',
+  feed: 'kindFeed',
+};
+
+/** Where selecting a search result takes you: a dated hit jumps the calendar. */
+function navigateToDoc(
+  doc: SearchDoc,
+  onNavigate: (screen: Screen) => void,
+  select: (date: ISODate) => void,
+  setView: (view: CalendarView) => void,
+): void {
+  if (doc.date !== undefined) {
+    onNavigate('calendar');
+    select(doc.date);
+    setView('day');
+    return;
+  }
+  onNavigate(doc.kind === 'recipe' || doc.kind === 'meal' ? 'meals' : 'tasks');
+}
 
 interface Command {
   id: string;
@@ -25,9 +57,7 @@ export function CommandPalette({
 }: {
   open: boolean;
   onClose: () => void;
-  onNavigate: (
-    screen: 'calendar' | 'tasks' | 'meals' | 'shopping' | 'macros' | 'settings',
-  ) => void;
+  onNavigate: (screen: Screen) => void;
 }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
@@ -37,6 +67,9 @@ export function CommandPalette({
   const select = useCalendar((s) => s.select);
   const calendars = useCalendars((s) => s.calendars);
   const toggleVisible = useCalendars((s) => s.toggleVisible);
+  // Subscribe so results refresh as the underlying data changes.
+  const taskItems = useTasks((s) => s.items);
+  const recipes = useMeals((s) => s.recipes);
 
   useEffect(() => {
     if (open) {
@@ -53,6 +86,7 @@ export function CommandPalette({
       { view: 'timeline', key: 'viewTimeline' },
       { view: 'day', key: 'viewDay' },
       { view: 'agenda', key: 'viewAgenda' },
+      { view: 'year', key: 'viewYear' },
     ];
     const list: Command[] = [
       // Jump-to-date, when the query reads as a date.
@@ -94,10 +128,20 @@ export function CommandPalette({
       })),
     ];
     const folded = query.trim().toLowerCase();
-    return folded === ''
-      ? list
-      : list.filter((c) => c.id === 'jump' || c.label.toLowerCase().includes(folded));
-  }, [query, calendars, t, onNavigate, select, setView, toggleVisible]);
+    if (folded === '') return list;
+
+    const commandMatches = list.filter(
+      (c) => c.id === 'jump' || c.label.toLowerCase().includes(folded),
+    );
+    // Findability (P8): fold ranked search hits in below the command matches.
+    const hits: Command[] = searchDocs(collectSearchDocs(taskItems, recipes), query).map((doc) => ({
+      id: `hit-${doc.kind}-${doc.id}`,
+      label: doc.title,
+      hint: KIND_KEY[doc.kind] !== undefined ? t(KIND_KEY[doc.kind] as string) : doc.kind,
+      run: () => navigateToDoc(doc, onNavigate, select, setView),
+    }));
+    return [...commandMatches, ...hits];
+  }, [query, calendars, taskItems, recipes, t, onNavigate, select, setView, toggleVisible]);
 
   if (!open) return null;
 
@@ -156,11 +200,16 @@ export function CommandPalette({
                 onClick={() => runCommand(command)}
                 onMouseEnter={() => setActive(i)}
                 className={[
-                  'w-full px-4 py-2 text-left text-sm',
+                  'flex w-full items-center gap-3 px-4 py-2 text-left text-sm',
                   i === active ? 'bg-accent-soft' : '',
                 ].join(' ')}
               >
-                {command.label}
+                <span className="min-w-0 flex-1 truncate">{command.label}</span>
+                {command.hint !== undefined && (
+                  <span className="shrink-0 text-xs uppercase tracking-wide text-ink-muted">
+                    {command.hint}
+                  </span>
+                )}
               </button>
             </li>
           ))}

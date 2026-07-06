@@ -11,4 +11,13 @@ export const en: Messages = {
   exportFrom: 'From',
   exportTo: 'To',
   nothingToExport: 'No events in that range.',
+  subscriptions: 'Subscriptions',
+  subscriptionsHint: 'Follow a read-only calendar feed (holidays, a shared .ics URL). It refreshes on open; offline shows the last copy.',
+  feedUrl: 'Feed URL (.ics)',
+  feedName: 'Name',
+  addFeed: 'Subscribe',
+  removeFeed: 'Remove {{name}}',
+  refreshFeed: 'Refresh',
+  feedStale: 'Showing the last cached copy.',
+  noFeeds: 'No subscriptions yet.',
 };

@@ -54,3 +54,31 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
+
+/* ── Print (P8) ──────────────────────────────────────────────────────────
+   Print month / week / agenda / year cleanly on paper: force the light ink
+   scheme, drop app chrome and controls (anything marked data-no-print), and
+   flatten cards to plain outlines. An empty range still prints its grid. */
+@media print {
+  :root {
+    color-scheme: light;
+    --surface: #fff;
+    --surface-raised: #fff;
+    --ink: #000;
+    --ink-muted: #333;
+    --ink-faint: #999;
+    --line: #ccc;
+    --accent: #000;
+    --accent-ink: #fff;
+    --accent-soft: #eee;
+  }
+  header,
+  [data-no-print] {
+    display: none !important;
+  }
+  .shadow-sm,
+  .shadow-lg,
+  .shadow-xl {
+    box-shadow: none !important;
+  }
+}

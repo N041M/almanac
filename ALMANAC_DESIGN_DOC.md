@@ -335,7 +335,8 @@ drop, undo, settings, vault export) ✅ · 6. Tasks/events/habits (+ NL quick
 entry) ✅ · 7. Macros + shopping ✅ (two modules over the food kernel; shopping's
 two-trigger aggregation §8.1, macros intake-vs-targets §8; both read the plan
 off the shared day record, neither imports meals) ·
-8. Interop (ICS, subscriptions, search, year view, printing) ·
+8. Interop (ICS import/export via an own RFC 5545 parser, read-only feed
+subscriptions behind a core FeedPort, ranked palette search, year view, print) ✅ ·
 9. Life modules (check-in, cycle, body, workouts, weather, insights,
 birthdays) · 10. Sync (§11) · 11. Mobile + widgets/tray · 12. Multi-user (§15).
 

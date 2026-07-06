@@ -8,3 +8,4 @@ export type { GeoCoordinates, WeatherSnapshot, WeatherPort } from './weather.js'
 export type { NutritionResult, NutritionPort } from './nutrition.js';
 export type { NotificationPayload, NotificationPort } from './notification.js';
 export type { SyncRecord, SyncPullResult, SyncPort } from './sync.js';
+export type { FeedPort } from './feed.js';

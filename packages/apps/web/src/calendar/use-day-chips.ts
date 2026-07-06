@@ -6,6 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { useCalendar } from '../state/store';
 import { useMeals } from '../state/meals';
 import { useTasks } from '../state/tasks';
+import { useSubscriptions } from '../state/subscriptions';
+import { feedOccurrences } from '../state/feed-occurrences';
+import { viewerZone } from '../state/viewer-zone';
 
 /**
  * The grids' view of module day-contributions: a meal chip per date (from
@@ -26,6 +29,8 @@ export function useDayChips(dates: ReadonlyArray<ISODate>): {
   const occurrences = useTasks((s) => s.occurrences);
   // Subscribed so the grids re-render when items change.
   const items = useTasks((s) => s.items);
+  // Subscribed so feed events appear once a subscription refreshes.
+  const feeds = useSubscriptions((s) => s.feeds);
 
   // One occurrence expansion for the whole visible range, not one per cell.
   const first = dates[0];
@@ -37,6 +42,18 @@ export function useDayChips(dates: ReadonlyArray<ISODate>): {
         : occurrences(first, last),
     [occurrences, first, last, items],
   );
+  const feedMap = useMemo(
+    () =>
+      first === undefined || last === undefined
+        ? new Map<ISODate, string[]>()
+        : feedOccurrences(
+            feeds.flatMap((f) => f.events),
+            first,
+            last,
+            viewerZone,
+          ),
+    [feeds, first, last],
+  );
 
   return {
     chipFor: (date) => {
@@ -46,10 +63,14 @@ export function useDayChips(dates: ReadonlyArray<ISODate>): {
       if (recipeId == null) return undefined;
       return recipes[recipeId]?.name ?? t('removedMeal');
     },
-    tasksFor: (date) =>
-      (taskMap.get(date) ?? [])
+    tasksFor: (date) => [
+      ...(taskMap.get(date) ?? [])
         .filter((o) => !(o.item.kind === 'task' && o.item.doneAt !== null))
         .map((o) => o.changes?.title ?? o.item.title),
+      // Read-only subscription events share the same compact chip line (L5:
+      // absent/failed feeds contribute nothing, quietly).
+      ...(feedMap.get(date) ?? []),
+    ],
     onDropEntry: (from, to) => void moveMeal(from, to),
   };
 }

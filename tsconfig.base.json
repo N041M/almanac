@@ -33,7 +33,9 @@
       "@almanac/macros": ["./packages/modules/macros/src/index.ts"],
       "@almanac/macros/*": ["./packages/modules/macros/src/*"],
       "@almanac/calendar-interop": ["./packages/modules/calendar-interop/src/index.ts"],
-      "@almanac/calendar-interop/*": ["./packages/modules/calendar-interop/src/*"]
+      "@almanac/calendar-interop/*": ["./packages/modules/calendar-interop/src/*"],
+      "@almanac/search": ["./packages/modules/search/src/index.ts"],
+      "@almanac/search/*": ["./packages/modules/search/src/*"]
     }
   }
 }

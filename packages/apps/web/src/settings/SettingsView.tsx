@@ -7,6 +7,7 @@ import { syncReminders, useTasks } from '../state/tasks';
 import { Button } from '../ui/Button';
 import { CalendarsManager } from './CalendarsManager';
 import { InteropSection } from './InteropSection';
+import { SubscriptionsSection } from './SubscriptionsSection';
 
 const WEEK_STARTS: Weekday[] = [1, 6, 0]; // Monday, Saturday, Sunday
 
@@ -160,6 +161,7 @@ export function SettingsView() {
       </section>
 
       <InteropSection />
+      <SubscriptionsSection />
     </div>
   );
 }

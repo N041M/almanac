@@ -17,7 +17,7 @@ import { useUndo } from './undo';
 import { today } from '../clock';
 import i18n from '../i18n/config';
 
-export type CalendarView = 'month' | 'week' | 'day' | 'agenda' | 'timeline';
+export type CalendarView = 'month' | 'week' | 'day' | 'agenda' | 'timeline' | 'year';
 
 /** How many days the agenda looks ahead (incl. today). */
 export const AGENDA_DAYS = 14;
@@ -37,6 +37,7 @@ const STEP: Record<CalendarView, (anchor: ISODate, dir: 1 | -1) => ISODate> = {
   day: (anchor, dir) => addDays(anchor, dir),
   agenda: (anchor, dir) => addDays(anchor, 14 * dir),
   timeline: (anchor, dir) => addDays(anchor, 7 * dir),
+  year: (anchor, dir) => addMonths(anchor, 12 * dir),
 };
 
 interface CalendarState {
