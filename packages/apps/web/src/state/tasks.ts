@@ -5,6 +5,7 @@ import {
   occurrencesForRange,
   parseQuickEntry,
   type DayOccurrence,
+  type EventItem,
   type Task,
   type TaskItem,
 } from '@almanac/tasks';
@@ -61,6 +62,8 @@ interface TasksState {
   removeItem: (id: string) => Promise<void>;
   /** Move an item to another to-do list (Inbox = clear the field). */
   moveToList: (id: string, listId: string) => Promise<void>;
+  /** Add imported events (ICS, P8) as one undoable batch — tasks owns persistence. */
+  importEvents: (events: ReadonlyArray<EventItem>) => Promise<void>;
   /** Everything in the window, keyed by date — for grids/agenda/day detail. */
   occurrences: (start: ISODate, end: ISODate) => Map<ISODate, DayOccurrence[]>;
 }
@@ -220,6 +223,20 @@ export const useTasks = create<TasksState>((set, get) => {
         apply: async () => {
           replace(get().items.map((i) => (i.id === id ? item : i)));
           await quietly(() => tasksStore.save(item));
+        },
+      });
+    },
+
+    importEvents: async (events) => {
+      if (events.length === 0) return;
+      replace([...get().items, ...events]);
+      for (const event of events) await quietly(() => tasksStore.save(event));
+      const ids = new Set(events.map((e) => e.id));
+      useUndo.getState().push({
+        labelKey: 'interop:importIcs',
+        apply: async () => {
+          replace(get().items.filter((item) => !ids.has(item.id)));
+          for (const id of ids) await quietly(() => tasksStore.remove(id));
         },
       });
     },

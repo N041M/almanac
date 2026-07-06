@@ -31,7 +31,9 @@
       "@almanac/shopping": ["./packages/modules/shopping/src/index.ts"],
       "@almanac/shopping/*": ["./packages/modules/shopping/src/*"],
       "@almanac/macros": ["./packages/modules/macros/src/index.ts"],
-      "@almanac/macros/*": ["./packages/modules/macros/src/*"]
+      "@almanac/macros/*": ["./packages/modules/macros/src/*"],
+      "@almanac/calendar-interop": ["./packages/modules/calendar-interop/src/index.ts"],
+      "@almanac/calendar-interop/*": ["./packages/modules/calendar-interop/src/*"]
     }
   }
 }

@@ -4,6 +4,7 @@ import { mealsManifest } from '@almanac/meals';
 import { tasksManifest } from '@almanac/tasks';
 import { shoppingManifest } from '@almanac/shopping';
 import { macrosManifest } from '@almanac/macros';
+import { interopManifest } from '@almanac/calendar-interop';
 import { applyManifests, type ModuleManifest } from '@almanac/core';
 import { resources } from './resources';
 
@@ -16,6 +17,7 @@ const manifests: ReadonlyArray<ModuleManifest> = [
   tasksManifest,
   shoppingManifest,
   macrosManifest,
+  interopManifest,
 ];
 const { bundles } = applyManifests(manifests);
 

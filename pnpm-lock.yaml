@@ -44,6 +44,9 @@ importers:
 
   packages/apps/web:
     dependencies:
+      '@almanac/calendar-interop':
+        specifier: workspace:*
+        version: link:../../modules/calendar-interop
       '@almanac/core':
         specifier: workspace:*
         version: link:../../core
@@ -121,6 +124,12 @@ importers:
   packages/core: {}
 
   packages/kernels/food:
+    dependencies:
+      '@almanac/core':
+        specifier: workspace:*
+        version: link:../../core
+
+  packages/modules/calendar-interop:
     dependencies:
       '@almanac/core':
         specifier: workspace:*

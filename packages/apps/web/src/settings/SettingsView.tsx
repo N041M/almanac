@@ -6,6 +6,7 @@ import { useSettings } from '../state/settings';
 import { syncReminders, useTasks } from '../state/tasks';
 import { Button } from '../ui/Button';
 import { CalendarsManager } from './CalendarsManager';
+import { InteropSection } from './InteropSection';
 
 const WEEK_STARTS: Weekday[] = [1, 6, 0]; // Monday, Saturday, Sunday
 
@@ -157,6 +158,8 @@ export function SettingsView() {
         </div>
         {importStatus !== null && <p className="text-sm text-ink-muted">{importStatus}</p>}
       </section>
+
+      <InteropSection />
     </div>
   );
 }

@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@almanac/calendar-interop": "workspace:*",
     "@almanac/core": "workspace:*",
     "@almanac/food": "workspace:*",
     "@almanac/macros": "workspace:*",
