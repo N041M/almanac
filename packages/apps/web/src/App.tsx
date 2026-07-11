@@ -54,8 +54,15 @@ export function App() {
   const view = useCalendar((s) => s.view);
   const loadSettings = useSettings((s) => s.load);
   const rememberLanguage = useSettings((s) => s.rememberLanguage);
+  const hiddenModules = useSettings((s) => s.hiddenModules);
   const [screen, setScreen] = useState<Screen>('calendar');
   const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // A hidden module keeps no screen: standing on one bounces home (L5 — the
+  // filter never strands the user on a blank surface).
+  useEffect(() => {
+    if (hiddenModules.includes(screen)) setScreen('calendar');
+  }, [hiddenModules, screen]);
 
   // Restore persisted settings (incl. language) and subscribed feeds once, at
   // startup — feeds render from cache immediately and refresh in the background.
@@ -85,7 +92,8 @@ export function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const tab = (target: Screen, label: string) => (
+  const tab = (target: Screen, label: string) =>
+    hiddenModules.includes(target) ? null : (
     <button
       type="button"
       onClick={() => setScreen(target)}

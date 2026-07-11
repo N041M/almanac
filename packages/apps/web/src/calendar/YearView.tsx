@@ -10,6 +10,7 @@ import { MEALS_NAMESPACE, type MealsDaySlice } from '@almanac/meals';
 import { dayRecipeIds } from '../state/meals-day';
 import { useCalendar } from '../state/store';
 import { useSettings } from '../state/settings';
+import { useModuleVisible } from '../state/module-visibility';
 import { useTasks } from '../state/tasks';
 import { DAY_MARK_NAMESPACE, type DayMark } from '../state/day-mark';
 import { today } from '../clock';
@@ -35,6 +36,9 @@ export function YearView({ year }: { year: number }) {
   const setView = useCalendar((s) => s.setView);
   const occurrences = useTasks((s) => s.occurrences);
   const items = useTasks((s) => s.items);
+  // Hidden modules add no density — the same posture as absent (L5).
+  const mealsVisible = useModuleVisible('meals');
+  const tasksVisible = useModuleVisible('tasks');
   const todayDate = today();
   const tag = bcp47(locale);
 
@@ -50,15 +54,17 @@ export function YearView({ year }: { year: number }) {
       if (n > 0) map.set(date, (map.get(date) ?? 0) + n);
     };
     for (const [date, day] of Object.entries(days)) {
-      bump(date, dayRecipeIds(getSlice<MealsDaySlice>(day, MEALS_NAMESPACE)).length);
+      if (mealsVisible) bump(date, dayRecipeIds(getSlice<MealsDaySlice>(day, MEALS_NAMESPACE)).length);
       if (getSlice<DayMark>(day, DAY_MARK_NAMESPACE)?.starred === true) bump(date);
     }
-    for (const [date, list] of occurrences(`${year}-01-01` as ISODate, `${year}-12-31` as ISODate)) {
-      bump(date, list.filter((o) => !(o.item.kind === 'task' && o.item.doneAt !== null)).length);
+    if (tasksVisible) {
+      for (const [date, list] of occurrences(`${year}-01-01` as ISODate, `${year}-12-31` as ISODate)) {
+        bump(date, list.filter((o) => !(o.item.kind === 'task' && o.item.doneAt !== null)).length);
+      }
     }
     return map;
     // `items` is a dep so the grid re-densifies when tasks change.
-  }, [days, occurrences, items, year]);
+  }, [days, occurrences, items, year, mealsVisible, tasksVisible]);
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 

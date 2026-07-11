@@ -7,6 +7,7 @@ import { useCalendar, type CalendarView } from '../state/store';
 import { useCalendars, DEFAULT_CALENDAR_ID } from '../state/calendars';
 import { useTasks } from '../state/tasks';
 import { useMeals } from '../state/meals';
+import { useSettings } from '../state/settings';
 import { collectSearchDocs } from '../state/search-sources';
 import { today } from '../clock';
 
@@ -70,6 +71,9 @@ export function CommandPalette({
   // Subscribe so results refresh as the underlying data changes.
   const taskItems = useTasks((s) => s.items);
   const recipes = useMeals((s) => s.recipes);
+  // A hidden module has no tab command and isn't searchable — a source that
+  // contributes nothing simply isn't there (L5).
+  const hiddenModules = useSettings((s) => s.hiddenModules);
 
   useEffect(() => {
     if (open) {
@@ -114,10 +118,13 @@ export function CommandPalette({
           setView(view);
         },
       })),
-      { id: 'tab-tasks', label: t('tasks:title'), run: () => onNavigate('tasks') },
-      { id: 'tab-meals', label: t('meals:title'), run: () => onNavigate('meals') },
-      { id: 'tab-shopping', label: t('shopping:title'), run: () => onNavigate('shopping') },
-      { id: 'tab-macros', label: t('macros:title'), run: () => onNavigate('macros') },
+      ...(['tasks', 'meals', 'shopping', 'macros'] as const)
+        .filter((id) => !hiddenModules.includes(id))
+        .map((id) => ({
+          id: `tab-${id}`,
+          label: t(`${id}:title`),
+          run: () => onNavigate(id),
+        })),
       { id: 'tab-settings', label: t('navSettings'), run: () => onNavigate('settings') },
       ...calendars.map((calendar) => ({
         id: `cal-${calendar.id}`,
@@ -134,14 +141,20 @@ export function CommandPalette({
       (c) => c.id === 'jump' || c.label.toLowerCase().includes(folded),
     );
     // Findability (P8): fold ranked search hits in below the command matches.
-    const hits: Command[] = searchDocs(collectSearchDocs(taskItems, recipes), query).map((doc) => ({
+    const hits: Command[] = searchDocs(
+      collectSearchDocs(
+        hiddenModules.includes('tasks') ? [] : taskItems,
+        hiddenModules.includes('meals') ? {} : recipes,
+      ),
+      query,
+    ).map((doc) => ({
       id: `hit-${doc.kind}-${doc.id}`,
       label: doc.title,
       hint: KIND_KEY[doc.kind] !== undefined ? t(KIND_KEY[doc.kind] as string) : doc.kind,
       run: () => navigateToDoc(doc, onNavigate, select, setView),
     }));
     return [...commandMatches, ...hits];
-  }, [query, calendars, taskItems, recipes, t, onNavigate, select, setView, toggleVisible]);
+  }, [query, calendars, taskItems, recipes, hiddenModules, t, onNavigate, select, setView, toggleVisible]);
 
   if (!open) return null;
 

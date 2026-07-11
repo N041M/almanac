@@ -20,6 +20,8 @@ interface PersistedSettings {
   reminderOffsetMin?: number;
   /** Which calendar new entries land on (absent = the built-in default). */
   defaultCalendarId?: string;
+  /** Modules the user hid (absent = all visible). */
+  hiddenModules?: string[];
 }
 
 interface SettingsState {
@@ -33,11 +35,17 @@ interface SettingsState {
   reminderOffsetMin: number;
   /** Which calendar new entries default to (Apple: "New events default to…"). */
   defaultCalendarId: string;
+  /**
+   * Modules the user hid — a view filter over tabs and calendar contributions,
+   * never deletion: the data keeps flowing underneath (L5).
+   */
+  hiddenModules: string[];
 
   load: () => Promise<void>;
   setWeekStartsOn: (weekday: Weekday | null) => Promise<void>;
   setTimeFormat: (format: TimeFormat) => Promise<void>;
   setDefaultCalendar: (id: string) => Promise<void>;
+  setModuleHidden: (id: string, hidden: boolean) => Promise<void>;
   /** Returns the resulting enabled state (permission may say no, quietly). */
   setRemindersEnabled: (enabled: boolean) => Promise<boolean>;
   setReminderOffsetMin: (minutes: number) => Promise<void>;
@@ -70,6 +78,10 @@ function decode(raw: string | null): PersistedSettings {
       out.reminderOffsetMin = d['reminderOffsetMin'];
     }
     if (typeof d['defaultCalendarId'] === 'string') out.defaultCalendarId = d['defaultCalendarId'];
+    if (Array.isArray(d['hiddenModules'])) {
+      // A malformed entry costs only itself (L5).
+      out.hiddenModules = d['hiddenModules'].filter((id): id is string => typeof id === 'string');
+    }
     return out;
   } catch {
     return {}; // corrupt settings slice → defaults, the app never blocks (L5)
@@ -97,6 +109,7 @@ export const useSettings = create<SettingsState>((set, get) => {
     remindersEnabled: false,
     reminderOffsetMin: 10,
     defaultCalendarId: DEFAULT_CALENDAR_ID,
+    hiddenModules: [],
 
     load: async () => {
       if (get().loaded) return;
@@ -113,6 +126,7 @@ export const useSettings = create<SettingsState>((set, get) => {
         remindersEnabled: stored.remindersEnabled ?? false,
         reminderOffsetMin: stored.reminderOffsetMin ?? 10,
         defaultCalendarId: stored.defaultCalendarId ?? DEFAULT_CALENDAR_ID,
+        hiddenModules: stored.hiddenModules ?? [],
       });
       // Restore the language choice (the locale carries formatting too).
       if (stored.language === 'cs' || stored.language === 'en') {
@@ -141,6 +155,16 @@ export const useSettings = create<SettingsState>((set, get) => {
       await persist((d) => {
         if (id === DEFAULT_CALENDAR_ID) delete d.defaultCalendarId;
         else d.defaultCalendarId = id;
+      });
+    },
+
+    setModuleHidden: async (id, hidden) => {
+      const current = get().hiddenModules;
+      const next = hidden ? [...new Set([...current, id])] : current.filter((m) => m !== id);
+      set({ hiddenModules: next });
+      await persist((d) => {
+        if (next.length === 0) delete d.hiddenModules;
+        else d.hiddenModules = next;
       });
     },
 

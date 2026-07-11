@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { bcp47, MS_PER_DAY, type Weekday } from '@almanac/core';
 import { useCalendar } from '../state/store';
 import { useSettings } from '../state/settings';
+import { TOGGLEABLE_MODULES } from '../state/module-visibility';
 import { syncReminders, useTasks } from '../state/tasks';
 import { Button } from '../ui/Button';
 import { CalendarsManager } from './CalendarsManager';
@@ -32,6 +33,8 @@ export function SettingsView() {
   const setReminderOffsetMin = useSettings((s) => s.setReminderOffsetMin);
   const exportVault = useSettings((s) => s.exportVault);
   const importVault = useSettings((s) => s.importVault);
+  const hiddenModules = useSettings((s) => s.hiddenModules);
+  const setModuleHidden = useSettings((s) => s.setModuleHidden);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
@@ -134,6 +137,26 @@ export function SettingsView() {
             </select>
           </label>
         )}
+      </section>
+
+      <section className="space-y-3 rounded-2xl border border-line bg-surface-raised p-4 shadow-sm">
+        <h2 className="font-semibold">{t('modules')}</h2>
+        <p className="text-sm text-ink-muted">{t('modulesHint')}</p>
+        {TOGGLEABLE_MODULES.map((id) => {
+          const name = t(`${id}:title`);
+          return (
+            <label key={id} className="flex items-center justify-between gap-3 text-sm">
+              {name}
+              <input
+                type="checkbox"
+                aria-label={t('moduleVisible', { name })}
+                checked={!hiddenModules.includes(id)}
+                onChange={(e) => void setModuleHidden(id, !e.target.checked)}
+                className="accent-accent"
+              />
+            </label>
+          );
+        })}
       </section>
 
       <CalendarsManager />

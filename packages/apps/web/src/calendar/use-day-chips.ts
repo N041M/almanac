@@ -7,6 +7,7 @@ import { useCalendar } from '../state/store';
 import { useMeals } from '../state/meals';
 import { useTasks } from '../state/tasks';
 import { useSubscriptions } from '../state/subscriptions';
+import { useModuleVisible } from '../state/module-visibility';
 import { feedOccurrences } from '../state/feed-occurrences';
 import { viewerZone } from '../state/viewer-zone';
 import { dayMealEntries } from '../state/meals-day';
@@ -33,6 +34,9 @@ export function useDayChips(dates: ReadonlyArray<ISODate>): {
   const items = useTasks((s) => s.items);
   // Subscribed so feed events appear once a subscription refreshes.
   const feeds = useSubscriptions((s) => s.feeds);
+  // A hidden module contributes nothing to the grids — same as absent (L5).
+  const mealsVisible = useModuleVisible('meals');
+  const tasksVisible = useModuleVisible('tasks');
 
   // One occurrence expansion for the whole visible range, not one per cell.
   const first = dates[0];
@@ -60,16 +64,18 @@ export function useDayChips(dates: ReadonlyArray<ISODate>): {
   return {
     chipsFor: (date) => {
       const day = days[date];
-      if (day === undefined || !loaded) return [];
+      if (day === undefined || !loaded || !mealsVisible) return [];
       return dayMealEntries(
         getSlice<MealsDaySlice>(day, MEALS_NAMESPACE),
         slots.map((slot) => slot.id),
       ).map(({ recipeId }) => recipes[recipeId]?.name ?? t('removedMeal'));
     },
     tasksFor: (date) => [
-      ...(taskMap.get(date) ?? [])
-        .filter((o) => !(o.item.kind === 'task' && o.item.doneAt !== null))
-        .map((o) => o.changes?.title ?? o.item.title),
+      ...(tasksVisible
+        ? (taskMap.get(date) ?? [])
+            .filter((o) => !(o.item.kind === 'task' && o.item.doneAt !== null))
+            .map((o) => o.changes?.title ?? o.item.title)
+        : []),
       // Read-only subscription events share the same compact chip line (L5:
       // absent/failed feeds contribute nothing, quietly).
       ...(feedMap.get(date) ?? []),

@@ -6,6 +6,7 @@ import { AGENDA_DAYS, useCalendar } from '../state/store';
 import { useMeals } from '../state/meals';
 import { useTasks } from '../state/tasks';
 import { dayMealEntries } from '../state/meals-day';
+import { useModuleVisible } from '../state/module-visibility';
 
 /**
  * The flat upcoming list (5.4): every day in the window with any module
@@ -20,6 +21,9 @@ export function AgendaView({ start }: { start: ISODate }) {
   const setView = useCalendar((s) => s.setView);
   const recipes = useMeals((s) => s.recipes);
   const slots = useMeals((s) => s.slots);
+  // Hidden modules contribute no rows — the same posture as absent (L5).
+  const mealsVisible = useModuleVisible('meals');
+  const tasksVisible = useModuleVisible('tasks');
 
   const dayFormat = new Intl.DateTimeFormat(bcp47(locale), {
     weekday: 'long',
@@ -37,12 +41,16 @@ export function AgendaView({ start }: { start: ISODate }) {
       const day = days[date];
       const meal = day === undefined ? undefined : getSlice<MealsDaySlice>(day, MEALS_NAMESPACE);
       const starred = day === undefined ? false : getSlice<DayMark>(day, DAY_MARK_NAMESPACE)?.starred === true;
-      const mealNames = dayMealEntries(meal, slots.map((slot) => slot.id)).map(
-        ({ recipeId }) => recipes[recipeId]?.name ?? t('meals:removedMeal'),
-      );
-      const tasks = (taskMap.get(date) ?? [])
-        .filter((o) => !(o.item.kind === 'task' && o.item.doneAt !== null))
-        .map((o) => o.changes?.title ?? o.item.title);
+      const mealNames = !mealsVisible
+        ? []
+        : dayMealEntries(meal, slots.map((slot) => slot.id)).map(
+            ({ recipeId }) => recipes[recipeId]?.name ?? t('meals:removedMeal'),
+          );
+      const tasks = !tasksVisible
+        ? []
+        : (taskMap.get(date) ?? [])
+            .filter((o) => !(o.item.kind === 'task' && o.item.doneAt !== null))
+            .map((o) => o.changes?.title ?? o.item.title);
       return { date, mealNames, starred, tasks };
     })
     .filter((row) => row.mealNames.length > 0 || row.starred || row.tasks.length > 0);

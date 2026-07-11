@@ -6,6 +6,7 @@ import { useMeals } from '../state/meals';
 import { useTasks } from '../state/tasks';
 import { dayMealEntries } from '../state/meals-day';
 import { slotLabel } from '../state/meal-slot-label';
+import { useModuleVisible } from '../state/module-visibility';
 import { CheckinSection } from '../checkin/CheckinSection';
 import { Button } from '../ui/Button';
 
@@ -40,14 +41,18 @@ export function DayDetail({
   const dayMeals = useMeals((s) => s.dayMeals);
   const recipes = useMeals((s) => s.recipes);
   const slots = useMeals((s) => s.slots);
+  // Hidden modules contribute nothing here — the same posture as absent (L5).
+  const mealsVisible = useModuleVisible('meals');
+  const tasksVisible = useModuleVisible('tasks');
+  const checkinVisible = useModuleVisible('checkin');
   const entry = plan.find((e) => e.date === date);
   const slice = entry !== undefined ? { slots: entry.slots } : dayMeals[date];
-  const plannedMeals = dayMealEntries(slice, slots.map((slot) => slot.id)).map(
-    ({ slotId, recipeId }) => ({
-      slotId,
-      name: recipes[recipeId]?.name ?? null,
-    }),
-  );
+  const plannedMeals = !mealsVisible
+    ? []
+    : dayMealEntries(slice, slots.map((slot) => slot.id)).map(({ slotId, recipeId }) => ({
+        slotId,
+        name: recipes[recipeId]?.name ?? null,
+      }));
 
   const loadTasks = useTasks((s) => s.load);
   const quickAdd = useTasks((s) => s.quickAdd);
@@ -91,7 +96,7 @@ export function DayDetail({
           })}
         </ul>
       )}
-      {dayTasks.length > 0 && (
+      {tasksVisible && dayTasks.length > 0 && (
         <ul className="space-y-1.5">
           {dayTasks.map((occurrence) => (
             <li key={occurrence.item.id} className="flex items-center gap-2 text-sm">
@@ -119,10 +124,11 @@ export function DayDetail({
           ))}
         </ul>
       )}
-      {plannedMeals.length === 0 && dayTasks.length === 0 && (
+      {plannedMeals.length === 0 && (!tasksVisible || dayTasks.length === 0) && (
         <p className="text-sm text-ink-muted">{t('noEntries')}</p>
       )}
       {/* Day actions live here too — no tab hunt needed (P6 UX). */}
+      {tasksVisible && (
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -139,6 +145,7 @@ export function DayDetail({
           className="w-full rounded-lg border border-line bg-surface-raised px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-accent"
         />
       </form>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => void toggleStar(date)}>
           {isStarred ? t('unstar') : t('star')}
@@ -146,11 +153,11 @@ export function DayDetail({
         {plannedMeals.length > 0 && (
           <Button onClick={() => copyMeal(date)}>{t('meals:copyMeal')}</Button>
         )}
-        {hasClipboard && (
+        {mealsVisible && hasClipboard && (
           <Button onClick={() => void pasteMeal(date)}>{t('meals:pasteMeal')}</Button>
         )}
       </div>
-      <CheckinSection date={date} />
+      {checkinVisible && <CheckinSection date={date} />}
     </div>
   );
 }
