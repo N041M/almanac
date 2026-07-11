@@ -17,7 +17,7 @@ export function TimelineView({ days, todayDate }: { days: ISODate[]; todayDate: 
   const select = useCalendar((s) => s.select);
   const selected = useCalendar((s) => s.selected);
   const timeFormat = useSettings((s) => s.timeFormat);
-  const { chipFor, onDropEntry } = useDayChips(days);
+  const { chipsFor, onDropEntry } = useDayChips(days);
 
   const tag = bcp47(locale);
   const dayFormat = new Intl.DateTimeFormat(tag, {
@@ -57,31 +57,29 @@ export function TimelineView({ days, todayDate }: { days: ISODate[]; todayDate: 
         <div className="border-b border-line py-1 pr-1 text-right text-[11px] text-ink-muted">
           {t('allDay')}
         </div>
-        {days.map((date) => {
-          const chip = chipFor(date);
-          return (
-            <div
-              key={date}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const from = e.dataTransfer.getData('text/almanac-day');
-                if (from !== '') onDropEntry(from, date);
-              }}
-              className="min-h-8 border-b border-l border-line p-1"
-            >
-              {chip !== undefined && (
-                <span
-                  draggable
-                  onDragStart={(e) => e.dataTransfer.setData('text/almanac-day', date)}
-                  className="block max-w-full cursor-grab truncate rounded bg-accent-soft px-1 py-0.5 text-[11px] leading-tight"
-                >
-                  {chip}
-                </span>
-              )}
-            </div>
-          );
-        })}
+        {days.map((date) => (
+          <div
+            key={date}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const from = e.dataTransfer.getData('text/almanac-day');
+              if (from !== '') onDropEntry(from, date);
+            }}
+            className="min-h-8 space-y-0.5 border-b border-l border-line p-1"
+          >
+            {chipsFor(date).map((chip, i) => (
+              <span
+                key={`${chip}-${i}`}
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('text/almanac-day', date)}
+                className="block max-w-full cursor-grab truncate rounded bg-accent-soft px-1 py-0.5 text-[11px] leading-tight"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+        ))}
 
         {/* hour rows — the surface timed events (Phase 6) render into */}
         {Array.from({ length: 24 }, (_, hour) => (

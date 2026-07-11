@@ -9,16 +9,16 @@ import { useTasks } from '../state/tasks';
 import { useSubscriptions } from '../state/subscriptions';
 import { feedOccurrences } from '../state/feed-occurrences';
 import { viewerZone } from '../state/viewer-zone';
-import { representativeRecipeId } from '../state/meals-day';
+import { dayMealEntries } from '../state/meals-day';
 
 /**
- * The grids' view of module day-contributions: a meal chip per date (from
- * the calendar's Day records), open task titles (entity records expanded by
- * range), and the drop handler that moves an entry between days. Absent
- * module data ⇒ nothing, quietly (L5).
+ * The grids' view of module day-contributions: the meal chips per date in
+ * slot order (from the calendar's Day records), open task titles (entity
+ * records expanded by range), and the drop handler that moves an entry
+ * between days. Absent module data ⇒ nothing, quietly (L5).
  */
 export function useDayChips(dates: ReadonlyArray<ISODate>): {
-  chipFor: (date: ISODate) => string | undefined;
+  chipsFor: (date: ISODate) => string[];
   tasksFor: (date: ISODate) => string[];
   onDropEntry: (from: ISODate, to: ISODate) => void;
 } {
@@ -26,6 +26,7 @@ export function useDayChips(dates: ReadonlyArray<ISODate>): {
   const days = useCalendar((s) => s.days);
   const loaded = useMeals((s) => s.loaded);
   const recipes = useMeals((s) => s.recipes);
+  const slots = useMeals((s) => s.slots);
   const moveMeal = useMeals((s) => s.moveMeal);
   const occurrences = useTasks((s) => s.occurrences);
   // Subscribed so the grids re-render when items change.
@@ -57,12 +58,13 @@ export function useDayChips(dates: ReadonlyArray<ISODate>): {
   );
 
   return {
-    chipFor: (date) => {
+    chipsFor: (date) => {
       const day = days[date];
-      if (day === undefined || !loaded) return undefined;
-      const recipeId = representativeRecipeId(getSlice<MealsDaySlice>(day, MEALS_NAMESPACE));
-      if (recipeId == null) return undefined;
-      return recipes[recipeId]?.name ?? t('removedMeal');
+      if (day === undefined || !loaded) return [];
+      return dayMealEntries(
+        getSlice<MealsDaySlice>(day, MEALS_NAMESPACE),
+        slots.map((slot) => slot.id),
+      ).map(({ recipeId }) => recipes[recipeId]?.name ?? t('removedMeal'));
     },
     tasksFor: (date) => [
       ...(taskMap.get(date) ?? [])

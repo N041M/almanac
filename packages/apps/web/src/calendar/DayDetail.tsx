@@ -4,7 +4,8 @@ import { bcp47, dateFromISO, type ISODate } from '@almanac/core';
 import { useCalendar } from '../state/store';
 import { useMeals } from '../state/meals';
 import { useTasks } from '../state/tasks';
-import { representativeRecipeId } from '../state/meals-day';
+import { dayMealEntries } from '../state/meals-day';
+import { slotLabel } from '../state/meal-slot-label';
 import { Button } from '../ui/Button';
 
 /**
@@ -31,16 +32,21 @@ export function DayDetail({
   const copyMeal = useMeals((s) => s.copyMeal);
   const pasteMeal = useMeals((s) => s.pasteMeal);
   const hasClipboard = useMeals((s) => s.mealClipboard !== null);
-  // A representative planned meal for this day (the plan is authoritative for
-  // its dates; other dates come from the read-through cache). `null` = a meal
-  // whose recipe no longer exists; `undefined` = nothing planned.
-  const plannedMeal = useMeals((s): string | null | undefined => {
-    const entry = s.plan.find((e) => e.date === date);
-    const slice = entry !== undefined ? { slots: entry.slots } : s.dayMeals[date];
-    const recipeId = representativeRecipeId(slice);
-    if (recipeId === null) return undefined;
-    return s.recipes[recipeId]?.name ?? null;
-  });
+  // The day's planned meals, one per filled slot (the plan is authoritative
+  // for its dates; other dates come from the read-through cache). A `null`
+  // name = a meal whose recipe no longer exists.
+  const plan = useMeals((s) => s.plan);
+  const dayMeals = useMeals((s) => s.dayMeals);
+  const recipes = useMeals((s) => s.recipes);
+  const slots = useMeals((s) => s.slots);
+  const entry = plan.find((e) => e.date === date);
+  const slice = entry !== undefined ? { slots: entry.slots } : dayMeals[date];
+  const plannedMeals = dayMealEntries(slice, slots.map((slot) => slot.id)).map(
+    ({ slotId, recipeId }) => ({
+      slotId,
+      name: recipes[recipeId]?.name ?? null,
+    }),
+  );
 
   const loadTasks = useTasks((s) => s.load);
   const quickAdd = useTasks((s) => s.quickAdd);
@@ -67,11 +73,22 @@ export function DayDetail({
   return (
     <div className="space-y-4">
       {heading && <h3 className="font-semibold capitalize">{label}</h3>}
-      {plannedMeal !== undefined && (
-        <p className="text-sm">
-          <span className="text-ink-muted">{t('meals:plannedMeal')}: </span>
-          {plannedMeal ?? t('meals:removedMeal')}
-        </p>
+      {plannedMeals.length > 0 && (
+        <ul className="space-y-1 text-sm">
+          {plannedMeals.map(({ slotId, name }) => {
+            const slot = slots.find((s) => s.id === slotId);
+            const label =
+              slot === undefined
+                ? t('meals:plannedMeal')
+                : slotLabel(slot, (key) => t(`meals:${key}`));
+            return (
+              <li key={slotId}>
+                <span className="text-ink-muted">{label}: </span>
+                {name ?? t('meals:removedMeal')}
+              </li>
+            );
+          })}
+        </ul>
       )}
       {dayTasks.length > 0 && (
         <ul className="space-y-1.5">
@@ -101,7 +118,7 @@ export function DayDetail({
           ))}
         </ul>
       )}
-      {plannedMeal === undefined && dayTasks.length === 0 && (
+      {plannedMeals.length === 0 && dayTasks.length === 0 && (
         <p className="text-sm text-ink-muted">{t('noEntries')}</p>
       )}
       {/* Day actions live here too — no tab hunt needed (P6 UX). */}
@@ -125,7 +142,7 @@ export function DayDetail({
         <Button onClick={() => void toggleStar(date)}>
           {isStarred ? t('unstar') : t('star')}
         </Button>
-        {plannedMeal !== undefined && (
+        {plannedMeals.length > 0 && (
           <Button onClick={() => copyMeal(date)}>{t('meals:copyMeal')}</Button>
         )}
         {hasClipboard && (

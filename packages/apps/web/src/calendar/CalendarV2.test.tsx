@@ -87,6 +87,40 @@ describe('5.4 — day contributions on the grid + drag & drop', () => {
     expect(within(source).queryByText('Goulash')).not.toBeInTheDocument();
   });
 
+  it('a day with meals in all three slots shows every chip, and the detail labels each slot', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Meal planning' }));
+    await screen.findByText('Your meals');
+    for (const name of ['Oatmeal', 'Ramen', 'Goulash']) {
+      await user.type(screen.getByLabelText('Meal name'), name);
+      await user.click(screen.getByRole('button', { name: 'Add meal' }));
+    }
+    const [breakfast, lunch, dinner] = useMeals.getState().items.map((i) => i.recipeId);
+    useMeals.setState({
+      mealClipboard: {
+        slots: {
+          breakfast: { recipeId: breakfast ?? '', locked: false, breakdown: null },
+          lunch: { recipeId: lunch ?? '', locked: false, breakdown: null },
+          dinner: { recipeId: dinner ?? '', locked: false, breakdown: null },
+        },
+      },
+    });
+    await useMeals.getState().pasteMeal(today());
+
+    await user.click(screen.getByRole('button', { name: 'Calendar' }));
+    const grid = screen.getByRole('grid');
+    expect(await within(grid).findByText('Oatmeal')).toBeInTheDocument();
+    expect(within(grid).getByText('Ramen')).toBeInTheDocument();
+    expect(within(grid).getByText('Goulash')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('gridcell', { current: 'date' }));
+    const panel = within(screen.getByRole('complementary'));
+    expect(await panel.findByText(/Breakfast:/)).toBeInTheDocument();
+    expect(panel.getByText(/Lunch:/)).toBeInTheDocument();
+    expect(panel.getByText(/Dinner:/)).toBeInTheDocument();
+  });
+
   it('⌘X cuts the selected day and ⌘Z restores it (undo, with toast)', async () => {
     const user = userEvent.setup();
     await placeMealOnToday(user);

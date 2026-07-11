@@ -165,7 +165,8 @@ describe('meals UI', () => {
     await user.click(screen.getByRole('gridcell', { current: 'date' }));
     const panel = within(screen.getByRole('complementary'));
     expect(await panel.findByText('Goulash')).toBeInTheDocument();
-    expect(panel.getByText(/Meal:/)).toBeInTheDocument();
+    // Each planned slot gets its own labeled line (here: the seeded dinner slot).
+    expect(panel.getByText(/Dinner:/)).toBeInTheDocument();
   });
 
   it('adds and removes ingredient lines; the catalog reuses ingredients by name', async () => {

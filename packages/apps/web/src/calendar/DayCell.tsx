@@ -10,8 +10,8 @@ interface DayCellProps {
   isToday: boolean;
   isSelected: boolean;
   isStarred: boolean;
-  /** The day's meal contribution, already resolved to a display name. */
-  chip?: string | undefined;
+  /** The day's meal contributions in slot order, already resolved to display names. */
+  chips?: string[];
   /** Open task/event titles on this day (rendered compactly, max two + count). */
   tasks?: string[];
   onSelect: (date: ISODate) => void;
@@ -31,7 +31,7 @@ export function DayCell({
   isToday,
   isSelected,
   isStarred,
-  chip,
+  chips = [],
   tasks = [],
   onSelect,
   onDropEntry,
@@ -76,15 +76,16 @@ export function DayCell({
       >
         {Number(date.slice(8, 10))}
       </span>
-      {chip !== undefined && (
+      {chips.map((chip, i) => (
         <span
+          key={`${chip}-${i}`}
           draggable={onDropEntry !== undefined}
           onDragStart={(e) => e.dataTransfer.setData('text/almanac-day', date)}
           className="max-w-full cursor-grab truncate rounded bg-accent-soft px-1 py-0.5 text-[11px] leading-tight"
         >
           {chip}
         </span>
-      )}
+      ))}
       {tasks.slice(0, 2).map((title, i) => (
         <span
           key={`${title}-${i}`}
