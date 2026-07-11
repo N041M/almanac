@@ -22,7 +22,7 @@ Status: ✅ done · 🔨 in progress · — planned.
 | 6 | Tasks module | tasks/events/habits on v2 primitives; multiple calendars (colors/visibility); NL quick entry + picker composer; command palette; series split; notifications wired (snooze deferred: no platform support yet — plain notifications per the L5 row; habit-editing UI rides a later pass) | ✅ |
 | 7 | Macros + Shopping | both modules + UI; two-trigger aggregation (§8.1) | ✅ |
 | 8 | Interop & findability | ICS import/export · calendar subscriptions · search · year view · printing | ✅ |
-| 9 | Life modules | check-in ✅ · cycle ✅ · body · workouts · weather · insights · birthdays | 🔨 |
+| 9 | Life modules | check-in ✅ · cycle ✅ · body ✅ · workouts · weather · insights (health + time allocation) · birthdays · planner (timeboxing) · secondary-TZ leftover | 🔨 |
 | 10 | Sync | D1/D4: accounts, per-slice LWW revision sync, server-durable | — |
 | 11 | Mobile + surfaces | Expo client · widgets · tray mini-calendar · polish | — |
 | 12 | Multi-user | shared calendars · attendees/invites/RSVP · free-busy + find-a-time · booking pages · conferencing links | — |
@@ -81,7 +81,8 @@ Degrade: permission denied/unsupported → quiet in-app badges; never nags (L5).
 - **Secondary time zone + working hours** (gap analysis 2026-07-05): an
   optional second zone column on the hour grid; shaded non-working hours.
   Both additive settings — unset ⇒ today's rendering, invalid zone ⇒ the
-  column quietly absent (L5).
+  column quietly absent (L5). **Still open (audit 2026-07-11):** shipped in
+  neither P5 nor P6 — land it during the Phase 9 wrap-up.
 - *(Landed early, with meals:)* **day-entry copy/paste** — clipboard over day
   slices, `⌘C`/`⌘V` on the grid + day-panel buttons; tasks/timed events join
   the same seam here.
@@ -167,10 +168,30 @@ seam), never by import; the app shell composes the cross-module read. Notes:
   + task/event occurrences; click a day to zoom to its month) and a **print
   stylesheet** (`@media print`: light ink, chrome hidden via `data-no-print`).
 
-## Phase 9 — Life modules (design doc §8, unchanged)
+## Phase 9 — Life modules (design doc §8) + productivity additions (2026-07-11)
 check-in · cycle · body · workouts · weather (signal provider) · insights ·
 **birthdays** (new small module: manual entries + yearly recurrence from 5.1;
 platform-contacts import later behind a capability port).
+
+Additions from the calendar-features gap analysis (2026-07-11):
+- **Insights grows time allocation** alongside the health correlations: hours
+  by category/calendar, meetings (busy events) vs. solo work, per week/month.
+  Same seam as everything insights does — it reads the shared records across
+  a range and **imports no module** (L1); no categorized/timed entries simply
+  means that panel is absent (L5).
+- **Planner (timeboxing) module** — deterministic auto-scheduling, no "AI":
+  scores open calendar slots for unscheduled tasks by deadline pressure,
+  numbered priority (D9), working hours, and existing busy blocks — the meal
+  engine's exact pattern (pure logic, injected `Clock`/`Rng`, exported tuning
+  constants, a per-suggestion "why this slot" breakdown like the meal panel).
+  **Suggestions the user confirms — never silent moves**; when the day shifts,
+  it re-suggests, it does not rearrange. Focus blocks are ordinary busy events
+  the planner treats as immovable, and Almanac's own reminders are suppressed
+  inside them. Chat/DND integrations (Slack etc.) are explicitly **not** part
+  of this: much later, a separate **opt-in integrations module** behind ports
+  (see §15 scope edges) — never core, never default.
+- **Secondary-TZ leftover** from 5.4 lands during this phase's wrap-up (it
+  shipped in neither P5 nor P6 — see the audit note there).
 
 ## Phase 11 — Mobile + surfaces
 Expo client reusing everything; **home-screen widgets** (month glance, today
@@ -206,7 +227,15 @@ or offline client keeps its full single-user behaviour (L5).
   is made explicitly.
 - **Booking pages.** A public server endpoint per user: choose from published
   availability windows → creates a pending event + invite. Rate-limited,
-  revocable link.
+  revocable link. Availability respects **buffer periods** between bookings
+  and a **per-day booking limit** (both per-page settings, 2026-07-11); a
+  slot that violates either simply isn't offered.
+- **Focus-time auto-decline.** A focus block is an ordinary `busy` event; a
+  per-account rule auto-declines incoming invites that collide with one — the
+  same pipeline as the invite whitelist, inverted, with the standard quiet
+  declined status on the sender's side. Off by default; whitelist wins over
+  auto-decline when both match (an explicitly trusted person outranks a
+  blanket rule).
 - **Conferencing links.** A `conferenceUrl` field on events (rendered as a
   join button) from day one of P12; provider integrations (auto-create
   Meet/Zoom) later behind a port, if ever.
@@ -261,6 +290,9 @@ failures). A feature is not done until its row here is demonstrably true.
 | Search | index build failure | empty results + silent rebuild on next query; search never blocks the app |
 | Year view / printing | no data / print of empty range | renders the grid/pages anyway (empty state is the most common state) |
 | Birthdays | contacts permission denied | manual entries only — the module's full core behaviour |
+| Planner | no open slot fits a task | the task stays on the list, unscheduled and unnagged — a full day is a normal day |
+| Planner | the day shifts under confirmed blocks | re-suggests only; confirmed placements are never silently moved |
+| Insights (time allocation) | no categorized/timed entries in range | that panel is simply absent |
 
 ### Phase 12 — multi-user (every feature additive on top of a working single-user app)
 
@@ -275,6 +307,7 @@ failures). A feature is not done until its row here is demonstrably true.
 | Invite whitelist | whitelist slice unavailable / corrupt | invites fall back to the normal pending flow (fail-closed: never auto-accept on uncertainty) |
 | Invite whitelist | sender ambiguous / spoof-suspect (email mismatch) | treated as not whitelisted → pending flow |
 | Invite whitelist | auto-accepted event collides with existing plans | still added + standard overlap flag; auto-accept never silently drops or double-books invisibly |
+| Focus auto-decline | rule slice unavailable / corrupt / sender also whitelisted | falls back to the normal pending flow (fail-open to human review — never a silent decline on uncertainty; whitelist outranks the blanket rule) |
 | Free-busy | attendee granted nothing | shown as "unknown"; find-a-time suggests from what it has; zero grants → the picker is a plain manual picker |
 | Booking page | slot taken concurrently | server validates at confirm; second booker gets an immediate re-suggest, owner sees one booking |
 | Booking page | link revoked | tombstone page; owner's app unaffected |
