@@ -12,6 +12,7 @@ export const TOGGLEABLE_MODULES = [
   'macros',
   'checkin',
   'cycle',
+  'body',
 ] as const;
 export type ToggleableModuleId = (typeof TOGGLEABLE_MODULES)[number];
 

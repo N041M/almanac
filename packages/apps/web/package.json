@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@almanac/body": "workspace:*",
     "@almanac/calendar-interop": "workspace:*",
     "@almanac/checkin": "workspace:*",
     "@almanac/core": "workspace:*",

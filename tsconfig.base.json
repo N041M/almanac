@@ -39,7 +39,9 @@
       "@almanac/checkin": ["./packages/modules/checkin/src/index.ts"],
       "@almanac/checkin/*": ["./packages/modules/checkin/src/*"],
       "@almanac/cycle": ["./packages/modules/cycle/src/index.ts"],
-      "@almanac/cycle/*": ["./packages/modules/cycle/src/*"]
+      "@almanac/cycle/*": ["./packages/modules/cycle/src/*"],
+      "@almanac/body": ["./packages/modules/body/src/index.ts"],
+      "@almanac/body/*": ["./packages/modules/body/src/*"]
     }
   }
 }

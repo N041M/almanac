@@ -9,6 +9,7 @@ import { slotLabel } from '../state/meal-slot-label';
 import { useModuleVisible } from '../state/module-visibility';
 import { CheckinSection } from '../checkin/CheckinSection';
 import { CycleSection } from '../cycle/CycleSection';
+import { BodySection } from '../body/BodySection';
 import { Button } from '../ui/Button';
 
 /**
@@ -47,6 +48,7 @@ export function DayDetail({
   const tasksVisible = useModuleVisible('tasks');
   const checkinVisible = useModuleVisible('checkin');
   const cycleVisible = useModuleVisible('cycle');
+  const bodyVisible = useModuleVisible('body');
   const entry = plan.find((e) => e.date === date);
   const slice = entry !== undefined ? { slots: entry.slots } : dayMeals[date];
   const plannedMeals = !mealsVisible
@@ -161,6 +163,7 @@ export function DayDetail({
       </div>
       {checkinVisible && <CheckinSection date={date} />}
       {cycleVisible && <CycleSection date={date} />}
+      {bodyVisible && <BodySection date={date} />}
     </div>
   );
 }
