@@ -13,6 +13,7 @@ export const TOGGLEABLE_MODULES = [
   'checkin',
   'cycle',
   'body',
+  'workouts',
 ] as const;
 export type ToggleableModuleId = (typeof TOGGLEABLE_MODULES)[number];
 

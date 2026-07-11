@@ -22,7 +22,7 @@ Status: ✅ done · 🔨 in progress · — planned.
 | 6 | Tasks module | tasks/events/habits on v2 primitives; multiple calendars (colors/visibility); NL quick entry + picker composer; command palette; series split; notifications wired (snooze deferred: no platform support yet — plain notifications per the L5 row; habit-editing UI rides a later pass) | ✅ |
 | 7 | Macros + Shopping | both modules + UI; two-trigger aggregation (§8.1) | ✅ |
 | 8 | Interop & findability | ICS import/export · calendar subscriptions · search · year view · printing | ✅ |
-| 9 | Life modules | check-in ✅ · cycle ✅ · body ✅ · workouts · weather · insights (health + time allocation) · birthdays · planner (timeboxing) · secondary-TZ leftover | 🔨 |
+| 9 | Life modules | check-in ✅ · cycle ✅ · body ✅ · workouts ✅ (log; plan-gen later) · weather · insights (health + time allocation) · birthdays · planner (timeboxing) · secondary-TZ leftover | 🔨 |
 | 10 | Sync | D1/D4: accounts, per-slice LWW revision sync, server-durable | — |
 | 11 | Mobile + surfaces | Expo client · widgets · tray mini-calendar · polish | — |
 | 12 | Multi-user | shared calendars · attendees/invites/RSVP · free-busy + find-a-time · booking pages · conferencing links | — |

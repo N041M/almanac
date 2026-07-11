@@ -41,7 +41,9 @@
       "@almanac/cycle": ["./packages/modules/cycle/src/index.ts"],
       "@almanac/cycle/*": ["./packages/modules/cycle/src/*"],
       "@almanac/body": ["./packages/modules/body/src/index.ts"],
-      "@almanac/body/*": ["./packages/modules/body/src/*"]
+      "@almanac/body/*": ["./packages/modules/body/src/*"],
+      "@almanac/workouts": ["./packages/modules/workouts/src/index.ts"],
+      "@almanac/workouts/*": ["./packages/modules/workouts/src/*"]
     }
   }
 }

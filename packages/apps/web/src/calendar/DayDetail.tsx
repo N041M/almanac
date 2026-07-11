@@ -10,6 +10,7 @@ import { useModuleVisible } from '../state/module-visibility';
 import { CheckinSection } from '../checkin/CheckinSection';
 import { CycleSection } from '../cycle/CycleSection';
 import { BodySection } from '../body/BodySection';
+import { WorkoutsSection } from '../workouts/WorkoutsSection';
 import { Button } from '../ui/Button';
 
 /**
@@ -49,6 +50,7 @@ export function DayDetail({
   const checkinVisible = useModuleVisible('checkin');
   const cycleVisible = useModuleVisible('cycle');
   const bodyVisible = useModuleVisible('body');
+  const workoutsVisible = useModuleVisible('workouts');
   const entry = plan.find((e) => e.date === date);
   const slice = entry !== undefined ? { slots: entry.slots } : dayMeals[date];
   const plannedMeals = !mealsVisible
@@ -164,6 +166,7 @@ export function DayDetail({
       {checkinVisible && <CheckinSection date={date} />}
       {cycleVisible && <CycleSection date={date} />}
       {bodyVisible && <BodySection date={date} />}
+      {workoutsVisible && <WorkoutsSection date={date} />}
     </div>
   );
 }

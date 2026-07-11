@@ -77,6 +77,9 @@ importers:
       '@almanac/tasks':
         specifier: workspace:*
         version: link:../../modules/tasks
+      '@almanac/workouts':
+        specifier: workspace:*
+        version: link:../../modules/workouts
       '@tauri-apps/plugin-notification':
         specifier: ^2.3.3
         version: 2.3.3
@@ -199,6 +202,12 @@ importers:
         version: link:../../kernels/food
 
   packages/modules/tasks:
+    dependencies:
+      '@almanac/core':
+        specifier: workspace:*
+        version: link:../../core
+
+  packages/modules/workouts:
     dependencies:
       '@almanac/core':
         specifier: workspace:*

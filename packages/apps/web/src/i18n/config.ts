@@ -8,6 +8,7 @@ import { interopManifest } from '@almanac/calendar-interop';
 import { checkinManifest } from '@almanac/checkin';
 import { cycleManifest } from '@almanac/cycle';
 import { bodyManifest } from '@almanac/body';
+import { workoutsManifest } from '@almanac/workouts';
 import { applyManifests, type ModuleManifest } from '@almanac/core';
 import { resources } from './resources';
 
@@ -24,6 +25,7 @@ const manifests: ReadonlyArray<ModuleManifest> = [
   checkinManifest,
   cycleManifest,
   bodyManifest,
+  workoutsManifest,
 ];
 const { bundles } = applyManifests(manifests);
 
