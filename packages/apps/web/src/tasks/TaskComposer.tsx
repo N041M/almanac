@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isValidISODate, type ISODate, type Priority } from '@almanac/core';
+import { isValidISODate, normalizePriority, type ISODate, type Priority } from '@almanac/core';
 import { parseQuickEntry } from '@almanac/tasks';
 import { useTasks } from '../state/tasks';
 import { DEFAULT_CALENDAR_ID, useCalendars } from '../state/calendars';
@@ -183,6 +183,15 @@ export function TaskComposer({ listId }: { listId?: string }) {
               {t(`priority${p}`)}
             </button>
           ))}
+          {/* The pills are presets; any positive integer works (D9). */}
+          <input
+            type="number"
+            min={1}
+            aria-label={t('priorityNumber')}
+            value={priority ?? ''}
+            onChange={(e) => setPriority(normalizePriority(Number(e.target.value)))}
+            className={`w-14 ${inputClass}`}
+          />
         </div>
 
         <input

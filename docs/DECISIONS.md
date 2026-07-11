@@ -5,6 +5,24 @@ to depart on), with rationale. Newest first. Keep entries short.
 
 ---
 
+## D9 — Numbered priority: unbounded levels, capped fade (§5 intensity scale)
+
+**Decided:** 2026-07-07 · **Status:** accepted · **Design ref:** §5, §8
+
+Three priority levels weren't enough. `Priority` widens from `1 | 2 | 3` to **any
+positive integer** (1 = most important, no upper bound). The **1/2/3 pills stay
+as presets**; a numeric field beside them takes any level, and quick entry's
+`!N` sigil accepts multi-digit numbers (`!5`, `!12`).
+
+The calendar keeps owning **one** intensity scale (§5), now derived from the
+number: `intensity = max(MIN, 1 − (N−1) × 0.3)`.
+- The original values are preserved exactly — P1 = 1.0, P2 = 0.7, P3 = 0.4.
+- Beyond P3 the fade **clamps at 0.4** so a very low priority stays legible and
+  never disappears — the scale is unbounded, the *fade* is not.
+- Absent or malformed priority → full intensity, never NaN (L5).
+- 1–3 keep their named labels (High/Medium/Low); higher levels render as a plain
+  numeric badge ("P5") rather than inventing a name for every level.
+
 ## D8 — Meals: several meals a day (§6 generalized from day → cell)
 
 **Decided:** 2026-07-07 · **Status:** accepted · **Design ref:** §6 (a deliberate

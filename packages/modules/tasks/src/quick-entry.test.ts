@@ -15,6 +15,15 @@ describe('parseQuickEntry — sigils (§8)', () => {
     });
   });
 
+  it('!N takes any positive integer — three levels were not enough (D9)', () => {
+    expect(parseQuickEntry('ship release !5', TODAY).priority).toBe(5);
+    expect(parseQuickEntry('ship release !12', TODAY).priority).toBe(12);
+    // Zero is not a priority; the token stays in the title (never blocks entry, L5).
+    const zero = parseQuickEntry('ship release !0', TODAY);
+    expect(zero.priority).toBeUndefined();
+    expect(zero.title).toContain('!0');
+  });
+
   it('a non-priority bang token stays in the title', () => {
     expect(parseQuickEntry('deploy !now', TODAY).title).toBe('deploy !now');
   });

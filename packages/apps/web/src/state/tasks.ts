@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ISODate } from '@almanac/core';
+import type { ISODate, Priority } from '@almanac/core';
 import {
   createTasksStore,
   occurrencesForRange,
@@ -32,7 +32,8 @@ export function wallClockToUtc(date: ISODate, minutes: number): number {
 export interface QuickAddOverrides {
   date?: ISODate;
   minutes?: number;
-  priority?: 1 | 2 | 3;
+  /** Any positive integer — the 1/2/3 pills are just presets (D9). */
+  priority?: Priority;
   /** Merged with parsed sigils; `@word` entries become contexts. */
   tags?: string[];
   notes?: string;

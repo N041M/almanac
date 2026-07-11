@@ -11,6 +11,8 @@ export const cs: Messages = {
   priority1: 'Vysoká',
   priority2: 'Střední',
   priority3: 'Nízká',
+  priorityN: 'P{{n}}',
+  priorityNumber: 'Číslo priority',
   tags: 'Štítky',
   kind: 'Typ',
   calendar: 'Kalendář',

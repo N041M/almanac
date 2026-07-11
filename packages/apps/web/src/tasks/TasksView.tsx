@@ -68,7 +68,10 @@ function TaskRow({ item }: { item: Task }) {
           {item.title}
           {item.priority !== undefined && (
             <span className="border border-line px-1 text-[10px] text-ink-muted">
-              {t(`priority${item.priority}`)}
+              {/* 1–3 keep their named labels; higher numbers show as "P5" (D9). */}
+              {item.priority <= 3
+                ? t(`priority${item.priority}`)
+                : t('priorityN', { n: item.priority })}
             </span>
           )}
           {chips.map((chip) => (

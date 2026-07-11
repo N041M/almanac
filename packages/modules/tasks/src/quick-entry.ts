@@ -1,9 +1,17 @@
-import { addDays, foldText, isValidISODate, weekdayOf, type ISODate } from '@almanac/core';
+import {
+  addDays,
+  foldText,
+  isValidISODate,
+  normalizePriority,
+  weekdayOf,
+  type ISODate,
+} from '@almanac/core';
 import type { Priority } from '@almanac/core';
 
 /**
  * Keyboard-first quick entry (§8): inline sigils (`#category`, `@context`,
- * `!1..3`) plus natural-language dates/times, English + Czech, matched
+ * `!N` — any positive integer) plus natural-language dates/times, English +
+ * Czech, matched
  * simultaneously (no language switch needed). Pure logic; the input widget is
  * per-client.
  *
@@ -105,9 +113,13 @@ export function parseQuickEntry(text: string, today: ISODate): QuickEntry {
         contexts.push(fold(body));
         continue;
       }
-      if (/^[123]$/.test(body)) {
-        priority = Number(body) as Priority;
-        continue;
+      // `!N` — any positive integer (three levels weren't enough, D9).
+      if (/^\d+$/.test(body)) {
+        const parsed = normalizePriority(Number(body));
+        if (parsed !== undefined) {
+          priority = parsed;
+          continue;
+        }
       }
     }
 

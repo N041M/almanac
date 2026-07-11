@@ -12,6 +12,8 @@ export const en: Messages = {
   priority1: 'High',
   priority2: 'Medium',
   priority3: 'Low',
+  priorityN: 'P{{n}}',
+  priorityNumber: 'Priority number',
   tags: 'Tags',
   kind: 'Type',
   calendar: 'Calendar',

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildWeek, buildMonthGrid, intensityForPriority } from './index.js';
+import { buildWeek, buildMonthGrid, intensityForPriority, normalizePriority } from './index.js';
 
 describe('priority intensity scale', () => {
   it('maps priority to a consistent intensity; absent → full (L5)', () => {
@@ -7,6 +7,24 @@ describe('priority intensity scale', () => {
     expect(intensityForPriority(2)).toBe(0.7);
     expect(intensityForPriority(3)).toBe(0.4);
     expect(intensityForPriority(undefined)).toBe(1);
+  });
+
+  it('numbered priority is unbounded, and the fade is capped so it stays legible (D9)', () => {
+    // Beyond P3 the fade would run past the floor — it clamps instead.
+    expect(intensityForPriority(4)).toBe(0.4);
+    expect(intensityForPriority(10)).toBe(0.4);
+    // Malformed values degrade to full intensity, never NaN (L5).
+    expect(intensityForPriority(Number.NaN)).toBe(1);
+    expect(intensityForPriority(0)).toBe(1);
+  });
+
+  it('normalizePriority keeps positive integers and rejects the rest', () => {
+    expect(normalizePriority(5)).toBe(5);
+    expect(normalizePriority(2.7)).toBe(2);
+    expect(normalizePriority(0)).toBeUndefined();
+    expect(normalizePriority(-1)).toBeUndefined();
+    expect(normalizePriority('3')).toBeUndefined();
+    expect(normalizePriority(Number.NaN)).toBeUndefined();
   });
 });
 
