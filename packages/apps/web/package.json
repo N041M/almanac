@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@almanac/calendar-interop": "workspace:*",
+    "@almanac/checkin": "workspace:*",
     "@almanac/core": "workspace:*",
     "@almanac/food": "workspace:*",
     "@almanac/macros": "workspace:*",

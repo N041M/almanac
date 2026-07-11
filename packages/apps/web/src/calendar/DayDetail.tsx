@@ -6,6 +6,7 @@ import { useMeals } from '../state/meals';
 import { useTasks } from '../state/tasks';
 import { dayMealEntries } from '../state/meals-day';
 import { slotLabel } from '../state/meal-slot-label';
+import { CheckinSection } from '../checkin/CheckinSection';
 import { Button } from '../ui/Button';
 
 /**
@@ -149,6 +150,7 @@ export function DayDetail({
           <Button onClick={() => void pasteMeal(date)}>{t('meals:pasteMeal')}</Button>
         )}
       </div>
+      <CheckinSection date={date} />
     </div>
   );
 }

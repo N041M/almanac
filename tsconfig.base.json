@@ -35,7 +35,9 @@
       "@almanac/calendar-interop": ["./packages/modules/calendar-interop/src/index.ts"],
       "@almanac/calendar-interop/*": ["./packages/modules/calendar-interop/src/*"],
       "@almanac/search": ["./packages/modules/search/src/index.ts"],
-      "@almanac/search/*": ["./packages/modules/search/src/*"]
+      "@almanac/search/*": ["./packages/modules/search/src/*"],
+      "@almanac/checkin": ["./packages/modules/checkin/src/index.ts"],
+      "@almanac/checkin/*": ["./packages/modules/checkin/src/*"]
     }
   }
 }

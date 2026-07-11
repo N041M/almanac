@@ -47,6 +47,9 @@ importers:
       '@almanac/calendar-interop':
         specifier: workspace:*
         version: link:../../modules/calendar-interop
+      '@almanac/checkin':
+        specifier: workspace:*
+        version: link:../../modules/checkin
       '@almanac/core':
         specifier: workspace:*
         version: link:../../core
@@ -133,6 +136,12 @@ importers:
         version: link:../../core
 
   packages/modules/calendar-interop:
+    dependencies:
+      '@almanac/core':
+        specifier: workspace:*
+        version: link:../../core
+
+  packages/modules/checkin:
     dependencies:
       '@almanac/core':
         specifier: workspace:*
