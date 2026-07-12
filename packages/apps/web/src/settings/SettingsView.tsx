@@ -30,6 +30,12 @@ export function SettingsView() {
   const timeFormat = useSettings((s) => s.timeFormat);
   const setWeekStartsOn = useSettings((s) => s.setWeekStartsOn);
   const setTimeFormat = useSettings((s) => s.setTimeFormat);
+  const secondaryZone = useSettings((s) => s.secondaryZone);
+  const setSecondaryZone = useSettings((s) => s.setSecondaryZone);
+  const workStartHour = useSettings((s) => s.workStartHour);
+  const workEndHour = useSettings((s) => s.workEndHour);
+  const setWorkingHours = useSettings((s) => s.setWorkingHours);
+  const [zoneText, setZoneText] = useState<string | null>(null);
   const remindersEnabled = useSettings((s) => s.remindersEnabled);
   const reminderOffsetMin = useSettings((s) => s.reminderOffsetMin);
   const setRemindersEnabled = useSettings((s) => s.setRemindersEnabled);
@@ -132,6 +138,62 @@ export function SettingsView() {
             }
             className="accent-accent"
           />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          {t('secondaryZone')}
+          <input
+            aria-label={t('secondaryZone')}
+            placeholder={t('secondaryZoneHint')}
+            value={zoneText ?? secondaryZone ?? ''}
+            onChange={(e) => setZoneText(e.target.value)}
+            onBlur={() => {
+              if (zoneText !== null) void setSecondaryZone(zoneText === '' ? null : zoneText);
+              setZoneText(null);
+            }}
+            className={selectClass}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          {t('workingHours')}
+          <span className="flex items-center gap-1.5">
+            <select
+              aria-label={t('workingHoursFrom')}
+              value={workStartHour ?? 'off'}
+              onChange={(e) =>
+                void setWorkingHours(
+                  e.target.value === 'off' ? null : Number(e.target.value),
+                  workEndHour,
+                )
+              }
+              className={selectClass}
+            >
+              <option value="off">{t('workingHoursOff')}</option>
+              {Array.from({ length: 24 }, (_, h) => (
+                <option key={h} value={h}>
+                  {h}:00
+                </option>
+              ))}
+            </select>
+            –
+            <select
+              aria-label={t('workingHoursTo')}
+              value={workEndHour ?? 'off'}
+              onChange={(e) =>
+                void setWorkingHours(
+                  workStartHour,
+                  e.target.value === 'off' ? null : Number(e.target.value),
+                )
+              }
+              className={selectClass}
+            >
+              <option value="off">{t('workingHoursOff')}</option>
+              {Array.from({ length: 24 }, (_, h) => (
+                <option key={h} value={h + 1}>
+                  {h + 1}:00
+                </option>
+              ))}
+            </select>
+          </span>
         </label>
         {cycleVisible && (
           <label className="flex items-center justify-between gap-3 text-sm">

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { bcp47, dateFromISO, type ISODate } from '@almanac/core';
 import { useCalendar } from '../state/store';
@@ -17,6 +18,9 @@ export function TimelineView({ days, todayDate }: { days: ISODate[]; todayDate: 
   const select = useCalendar((s) => s.select);
   const selected = useCalendar((s) => s.selected);
   const timeFormat = useSettings((s) => s.timeFormat);
+  const secondaryZone = useSettings((s) => s.secondaryZone);
+  const workStartHour = useSettings((s) => s.workStartHour);
+  const workEndHour = useSettings((s) => s.workEndHour);
   const { chipsFor, onDropEntry } = useDayChips(days);
 
   const tag = bcp47(locale);
@@ -33,11 +37,53 @@ export function TimelineView({ days, todayDate }: { days: ISODate[]; todayDate: 
   });
   const hourLabel = (hour: number) => hourFormat.format(hour * 3_600_000);
 
+  // 5.4: the optional second-zone column. An invalid IANA id renders no
+  // column — the grid never breaks on a typo (L5).
+  const secondaryFormat = useMemo(() => {
+    if (secondaryZone === null) return null;
+    try {
+      return new Intl.DateTimeFormat(tag, {
+        hour: 'numeric',
+        timeZone: secondaryZone,
+        ...(timeFormat === '12h' ? { hourCycle: 'h12' as const } : {}),
+        ...(timeFormat === '24h' ? { hourCycle: 'h23' as const } : {}),
+      });
+    } catch {
+      return null;
+    }
+  }, [secondaryZone, tag, timeFormat]);
+  // The axis is wall-clock; anchor the mapping on the visible week's first day.
+  const secondaryLabel = (hour: number): string => {
+    const first = days[0];
+    if (secondaryFormat === null || first === undefined) return '';
+    const [y, m, d] = first.split('-').map(Number);
+    return secondaryFormat.format(new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1, hour));
+  };
+  const zoneName = secondaryZone?.split('/').pop()?.replace(/_/g, ' ') ?? '';
+
+  // 5.4: shaded non-working hours — only when a sane range is set (L5).
+  const working =
+    workStartHour !== null && workEndHour !== null && workStartHour < workEndHour
+      ? { start: workStartHour, end: workEndHour }
+      : null;
+  const offHours = (hour: number): boolean =>
+    working !== null && (hour < working.start || hour >= working.end);
+
+  const gridCols =
+    secondaryFormat === null
+      ? 'grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]'
+      : 'grid-cols-[3.5rem_3.5rem_repeat(7,minmax(0,1fr))]';
+
   return (
     <div className="overflow-x-auto">
-      <div className="grid min-w-[40rem] grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] text-sm">
+      <div className={`grid min-w-[40rem] ${gridCols} text-sm`}>
         {/* header row */}
         <div />
+        {secondaryFormat !== null && (
+          <div className="truncate border-b border-line px-1 py-1.5 text-center text-[11px] text-ink-faint">
+            {zoneName}
+          </div>
+        )}
         {days.map((date) => (
           <button
             key={date}
@@ -57,6 +103,7 @@ export function TimelineView({ days, todayDate }: { days: ISODate[]; todayDate: 
         <div className="border-b border-line py-1 pr-1 text-right text-[11px] text-ink-muted">
           {t('allDay')}
         </div>
+        {secondaryFormat !== null && <div className="border-b border-line" />}
         {days.map((date) => (
           <div
             key={date}
@@ -87,12 +134,18 @@ export function TimelineView({ days, todayDate }: { days: ISODate[]; todayDate: 
             <div className="h-10 pr-1 text-right text-[11px] leading-10 text-ink-muted">
               {hourLabel(hour)}
             </div>
+            {secondaryFormat !== null && (
+              <div className="h-10 pr-1 text-right text-[11px] leading-10 text-ink-faint">
+                {secondaryLabel(hour)}
+              </div>
+            )}
             {days.map((date) => (
               <div
                 key={`${date}-${hour}`}
                 className={[
                   'h-10 border-b border-l border-line/60',
                   date === todayDate ? 'bg-accent-soft/20' : '',
+                  offHours(hour) ? 'bg-ink-faint/5' : '',
                 ].join(' ')}
               />
             ))}

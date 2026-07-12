@@ -22,6 +22,11 @@ interface PersistedSettings {
   defaultCalendarId?: string;
   /** Modules the user hid (absent = all visible). */
   hiddenModules?: string[];
+  /** IANA id for the hour grid's second zone column (absent = no column). */
+  secondaryZone?: string;
+  /** Working hours [start, end) for the hour grid's shading (absent = none). */
+  workStartHour?: number;
+  workEndHour?: number;
 }
 
 interface SettingsState {
@@ -40,12 +45,21 @@ interface SettingsState {
    * never deletion: the data keeps flowing underneath (L5).
    */
   hiddenModules: string[];
+  /**
+   * 5.4 leftovers, both additive: unset ⇒ today's rendering; an invalid zone
+   * renders no column — the grid never breaks on a typo (L5).
+   */
+  secondaryZone: string | null;
+  workStartHour: number | null;
+  workEndHour: number | null;
 
   load: () => Promise<void>;
   setWeekStartsOn: (weekday: Weekday | null) => Promise<void>;
   setTimeFormat: (format: TimeFormat) => Promise<void>;
   setDefaultCalendar: (id: string) => Promise<void>;
   setModuleHidden: (id: string, hidden: boolean) => Promise<void>;
+  setSecondaryZone: (zone: string | null) => Promise<void>;
+  setWorkingHours: (start: number | null, end: number | null) => Promise<void>;
   /** Returns the resulting enabled state (permission may say no, quietly). */
   setRemindersEnabled: (enabled: boolean) => Promise<boolean>;
   setReminderOffsetMin: (minutes: number) => Promise<void>;
@@ -82,6 +96,15 @@ function decode(raw: string | null): PersistedSettings {
       // A malformed entry costs only itself (L5).
       out.hiddenModules = d['hiddenModules'].filter((id): id is string => typeof id === 'string');
     }
+    if (typeof d['secondaryZone'] === 'string' && d['secondaryZone'] !== '') {
+      out.secondaryZone = d['secondaryZone'];
+    }
+    const hour = (v: unknown): number | undefined =>
+      typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 24 ? v : undefined;
+    const start = hour(d['workStartHour']);
+    const end = hour(d['workEndHour']);
+    if (start !== undefined) out.workStartHour = start;
+    if (end !== undefined) out.workEndHour = end;
     return out;
   } catch {
     return {}; // corrupt settings slice → defaults, the app never blocks (L5)
@@ -110,6 +133,9 @@ export const useSettings = create<SettingsState>((set, get) => {
     reminderOffsetMin: 10,
     defaultCalendarId: DEFAULT_CALENDAR_ID,
     hiddenModules: [],
+    secondaryZone: null,
+    workStartHour: null,
+    workEndHour: null,
 
     load: async () => {
       if (get().loaded) return;
@@ -127,6 +153,9 @@ export const useSettings = create<SettingsState>((set, get) => {
         reminderOffsetMin: stored.reminderOffsetMin ?? 10,
         defaultCalendarId: stored.defaultCalendarId ?? DEFAULT_CALENDAR_ID,
         hiddenModules: stored.hiddenModules ?? [],
+        secondaryZone: stored.secondaryZone ?? null,
+        workStartHour: stored.workStartHour ?? null,
+        workEndHour: stored.workEndHour ?? null,
       });
       // Restore the language choice (the locale carries formatting too).
       if (stored.language === 'cs' || stored.language === 'en') {
@@ -165,6 +194,25 @@ export const useSettings = create<SettingsState>((set, get) => {
       await persist((d) => {
         if (next.length === 0) delete d.hiddenModules;
         else d.hiddenModules = next;
+      });
+    },
+
+    setSecondaryZone: async (zone) => {
+      const next = zone?.trim() === '' ? null : zone;
+      set({ secondaryZone: next });
+      await persist((d) => {
+        if (next === null) delete d.secondaryZone;
+        else d.secondaryZone = next;
+      });
+    },
+
+    setWorkingHours: async (start, end) => {
+      set({ workStartHour: start, workEndHour: end });
+      await persist((d) => {
+        if (start === null) delete d.workStartHour;
+        else d.workStartHour = start;
+        if (end === null) delete d.workEndHour;
+        else d.workEndHour = end;
       });
     },
 

@@ -22,7 +22,7 @@ Status: ✅ done · 🔨 in progress · — planned.
 | 6 | Tasks module | tasks/events/habits on v2 primitives; multiple calendars (colors/visibility); NL quick entry + picker composer; command palette; series split; notifications wired (snooze deferred: no platform support yet — plain notifications per the L5 row; habit-editing UI rides a later pass) | ✅ |
 | 7 | Macros + Shopping | both modules + UI; two-trigger aggregation (§8.1) | ✅ |
 | 8 | Interop & findability | ICS import/export · calendar subscriptions · search · year view · printing | ✅ |
-| 9 | Life modules | check-in ✅ · cycle ✅ · body ✅ · workouts ✅ (log; plan-gen later) · weather ✅ · birthdays ✅ · insights (health + time allocation) · planner (timeboxing) · secondary-TZ leftover | 🔨 |
+| 9 | Life modules | check-in ✅ · cycle ✅ · body ✅ · workouts ✅ (log; plan-gen later) · weather ✅ · birthdays ✅ · secondary-TZ leftover ✅ · insights (health + time allocation) · planner (timeboxing) | 🔨 |
 | 10 | Sync | D1/D4: accounts, per-slice LWW revision sync, server-durable | — |
 | 11 | Mobile + surfaces | Expo client · widgets · tray mini-calendar · polish | — |
 | 12 | Multi-user | shared calendars · attendees/invites/RSVP · free-busy + find-a-time · booking pages · conferencing links | — |
@@ -81,8 +81,9 @@ Degrade: permission denied/unsupported → quiet in-app badges; never nags (L5).
 - **Secondary time zone + working hours** (gap analysis 2026-07-05): an
   optional second zone column on the hour grid; shaded non-working hours.
   Both additive settings — unset ⇒ today's rendering, invalid zone ⇒ the
-  column quietly absent (L5). **Still open (audit 2026-07-11):** shipped in
-  neither P5 nor P6 — land it during the Phase 9 wrap-up.
+  column quietly absent (L5). ~~Still open (audit 2026-07-11)~~ **landed
+  2026-07-12** with the P9 wrap-up: second-zone column + working-hours
+  shading on the timeline, both in Settings.
 - *(Landed early, with meals:)* **day-entry copy/paste** — clipboard over day
   slices, `⌘C`/`⌘V` on the grid + day-panel buttons; tasks/timed events join
   the same seam here.
