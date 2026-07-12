@@ -44,6 +44,9 @@ importers:
 
   packages/apps/web:
     dependencies:
+      '@almanac/birthdays':
+        specifier: workspace:*
+        version: link:../../modules/birthdays
       '@almanac/body':
         specifier: workspace:*
         version: link:../../modules/body
@@ -142,6 +145,12 @@ importers:
   packages/core: {}
 
   packages/kernels/food:
+    dependencies:
+      '@almanac/core':
+        specifier: workspace:*
+        version: link:../../core
+
+  packages/modules/birthdays:
     dependencies:
       '@almanac/core':
         specifier: workspace:*

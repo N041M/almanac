@@ -45,7 +45,9 @@
       "@almanac/workouts": ["./packages/modules/workouts/src/index.ts"],
       "@almanac/workouts/*": ["./packages/modules/workouts/src/*"],
       "@almanac/weather": ["./packages/modules/weather/src/index.ts"],
-      "@almanac/weather/*": ["./packages/modules/weather/src/*"]
+      "@almanac/weather/*": ["./packages/modules/weather/src/*"],
+      "@almanac/birthdays": ["./packages/modules/birthdays/src/index.ts"],
+      "@almanac/birthdays/*": ["./packages/modules/birthdays/src/*"]
     }
   }
 }

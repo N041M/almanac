@@ -1,11 +1,13 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { getSlice, type ISODate } from '@almanac/core';
 import { MEALS_NAMESPACE, type MealsDaySlice } from '@almanac/meals';
 import type { DayOccurrence } from '@almanac/tasks';
+import { ageOn, birthdaysOn } from '@almanac/birthdays';
 import { useTranslation } from 'react-i18next';
 import { useCalendar } from '../state/store';
 import { useMeals } from '../state/meals';
 import { useTasks } from '../state/tasks';
+import { useBirthdays } from '../state/birthdays';
 import { useSubscriptions } from '../state/subscriptions';
 import { useModuleVisible } from '../state/module-visibility';
 import { feedOccurrences } from '../state/feed-occurrences';
@@ -24,6 +26,7 @@ export function useDayChips(dates: ReadonlyArray<ISODate>): {
   onDropEntry: (from: ISODate, to: ISODate) => void;
 } {
   const { t } = useTranslation('meals');
+  const { t: tBirthdays } = useTranslation('birthdays');
   const days = useCalendar((s) => s.days);
   const loaded = useMeals((s) => s.loaded);
   const recipes = useMeals((s) => s.recipes);
@@ -37,6 +40,12 @@ export function useDayChips(dates: ReadonlyArray<ISODate>): {
   // A hidden module contributes nothing to the grids — same as absent (L5).
   const mealsVisible = useModuleVisible('meals');
   const tasksVisible = useModuleVisible('tasks');
+  const birthdaysVisible = useModuleVisible('birthdays');
+  const birthdayEntries = useBirthdays((s) => s.entries);
+  const loadBirthdays = useBirthdays((s) => s.load);
+  useEffect(() => {
+    void loadBirthdays();
+  }, [loadBirthdays]);
 
   // One occurrence expansion for the whole visible range, not one per cell.
   const first = dates[0];
@@ -71,6 +80,15 @@ export function useDayChips(dates: ReadonlyArray<ISODate>): {
       ).map(({ recipeId }) => recipes[recipeId]?.name ?? t('removedMeal'));
     },
     tasksFor: (date) => [
+      // Birthdays lead the compact line list — a yearly, read-only entry.
+      ...(birthdaysVisible
+        ? birthdaysOn(birthdayEntries, date).map((birthday) => {
+            const age = ageOn(birthday, date);
+            return age === null
+              ? tBirthdays('chip', { name: birthday.name })
+              : tBirthdays('chipWithAge', { name: birthday.name, age });
+          })
+        : []),
       ...(tasksVisible
         ? (taskMap.get(date) ?? [])
             .filter((o) => !(o.item.kind === 'task' && o.item.doneAt !== null))

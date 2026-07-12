@@ -12,6 +12,8 @@ import { CycleSection } from '../cycle/CycleSection';
 import { BodySection } from '../body/BodySection';
 import { WorkoutsSection } from '../workouts/WorkoutsSection';
 import { WeatherLine } from '../weather/WeatherLine';
+import { ageOn, birthdaysOn } from '@almanac/birthdays';
+import { useBirthdays } from '../state/birthdays';
 import { Button } from '../ui/Button';
 
 /**
@@ -53,6 +55,10 @@ export function DayDetail({
   const bodyVisible = useModuleVisible('body');
   const workoutsVisible = useModuleVisible('workouts');
   const weatherVisible = useModuleVisible('weather');
+  const birthdaysVisible = useModuleVisible('birthdays');
+  const birthdayEntries = useBirthdays((s) => s.entries);
+  const loadBirthdays = useBirthdays((s) => s.load);
+  const dayBirthdays = birthdaysVisible ? birthdaysOn(birthdayEntries, date) : [];
   const entry = plan.find((e) => e.date === date);
   const slice = entry !== undefined ? { slots: entry.slots } : dayMeals[date];
   const plannedMeals = !mealsVisible
@@ -73,7 +79,8 @@ export function DayDetail({
   useEffect(() => {
     void load().then(() => loadDayMeal(date));
     void loadTasks();
-  }, [load, loadDayMeal, loadTasks, date]);
+    void loadBirthdays();
+  }, [load, loadDayMeal, loadTasks, loadBirthdays, date]);
 
   const label = new Intl.DateTimeFormat(bcp47(locale), {
     weekday: 'long',
@@ -88,6 +95,16 @@ export function DayDetail({
     <div className="space-y-4">
       {heading && <h3 className="font-semibold capitalize">{label}</h3>}
       {weatherVisible && <WeatherLine date={date} />}
+      {dayBirthdays.map((birthday) => {
+        const age = ageOn(birthday, date);
+        return (
+          <p key={birthday.id} className="text-sm">
+            {age === null
+              ? t('birthdays:chip', { name: birthday.name })
+              : t('birthdays:chipWithAge', { name: birthday.name, age })}
+          </p>
+        );
+      })}
       {plannedMeals.length > 0 && (
         <ul className="space-y-1 text-sm">
           {plannedMeals.map(({ slotId, name }) => {

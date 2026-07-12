@@ -9,6 +9,7 @@ import { useWeather } from '../state/weather';
 import { syncReminders, useTasks } from '../state/tasks';
 import { Button } from '../ui/Button';
 import { CalendarsManager } from './CalendarsManager';
+import { BirthdaysSection } from './BirthdaysSection';
 import { InteropSection } from './InteropSection';
 import { SubscriptionsSection } from './SubscriptionsSection';
 
@@ -41,6 +42,7 @@ export function SettingsView() {
   const predictionEnabled = useCycle((s) => s.predictionEnabled);
   const setPredictionEnabled = useCycle((s) => s.setPredictionEnabled);
   const weatherVisible = useModuleVisible('weather');
+  const birthdaysVisible = useModuleVisible('birthdays');
   const weatherPlace = useWeather((s) => s.place);
   const weatherLookupFailed = useWeather((s) => s.lastLookupFailed);
   const loadWeather = useWeather((s) => s.load);
@@ -212,6 +214,8 @@ export function SettingsView() {
           <p className="text-xs text-ink-faint">{t('weather:attribution')}</p>
         </section>
       )}
+
+      {birthdaysVisible && <BirthdaysSection />}
 
       <CalendarsManager />
 

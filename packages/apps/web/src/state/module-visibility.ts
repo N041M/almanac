@@ -15,6 +15,7 @@ export const TOGGLEABLE_MODULES = [
   'body',
   'workouts',
   'weather',
+  'birthdays',
 ] as const;
 export type ToggleableModuleId = (typeof TOGGLEABLE_MODULES)[number];
 
